@@ -1,0 +1,20 @@
+meta {
+  name: Upload Balance
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:8080/api/accounts/v1/statements/upload
+  body: multipartForm
+  auth: inherit
+}
+
+body:multipart-form {
+  statement: @file(C:\Users\user\Desktop\Banks\icici.pdf)
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
