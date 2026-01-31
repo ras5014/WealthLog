@@ -3,6 +3,8 @@ import fs from "fs";
 import { successResponse } from "../../utils/responses";
 import { PDFParse } from "pdf-parse";
 import { ICICIparseStatementSummary } from "../../services/parsers/icici.parser";
+import { HDFCparseStatementSummary } from "../../services/parsers/hdfc.parser";
+import { SBIparseStatementSummary } from "../../services/parsers/sbi.parser";
 
 export const uploadStatement = async (
   req: Request,
@@ -26,10 +28,24 @@ export const uploadStatement = async (
     const pdfData = new PDFParse({ data: buffer });
     const parsedData = await pdfData.getText();
 
-    const result = {};
+    const result = {
+      ICICI: {},
+      HDFC: {},
+      SBI: {},
+    };
 
     if (bank === "ICICI") {
-      const parsedStatement = ICICIparseStatementSummary(parsedData);
+      const parsedStatement_ICICI = ICICIparseStatementSummary(parsedData);
+      result.ICICI = parsedStatement_ICICI;
+    } else if (bank === "HDFC") {
+      const parsedStatement_HDFC = HDFCparseStatementSummary(parsedData);
+      result.HDFC = parsedStatement_HDFC;
+    } else if (bank === "SBI") {
+      const parsedStatement_SBI = SBIparseStatementSummary(parsedData);
+      result.SBI = parsedStatement_SBI;
+    } else {
+      next(new Error("Unsupported bank"));
+      return;
     }
 
     //TODO: Save result to DB associated with user account
@@ -39,7 +55,6 @@ export const uploadStatement = async (
       data: result,
     });
   } catch (error) {
-    console.error("Error uploading statement:", error);
     next(error);
   } finally {
     if (filePath && fs.existsSync(filePath)) {

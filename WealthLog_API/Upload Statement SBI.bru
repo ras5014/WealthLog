@@ -1,0 +1,21 @@
+meta {
+  name: Upload Statement SBI
+  type: http
+  seq: 5
+}
+
+post {
+  url: http://localhost:8080/api/accounts/v1/statements/upload
+  body: multipartForm
+  auth: inherit
+}
+
+body:multipart-form {
+  statement: @file(C:\Users\user\Desktop\Banks\SBI_PrevMonth.pdf)
+  bank: SBI
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

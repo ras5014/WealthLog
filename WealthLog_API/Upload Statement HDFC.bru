@@ -1,7 +1,7 @@
 meta {
-  name: Upload Balance
+  name: Upload Statement HDFC
   type: http
-  seq: 2
+  seq: 4
 }
 
 post {
@@ -11,7 +11,8 @@ post {
 }
 
 body:multipart-form {
-  statement: @file(C:\Users\user\Desktop\Banks\icici.pdf)
+  statement: @file(C:\Users\user\Desktop\Banks\hdfc1.pdf)
+  bank: HDFC
 }
 
 settings {

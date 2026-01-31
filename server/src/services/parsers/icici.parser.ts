@@ -1,49 +1,75 @@
+// src/services/parsers/icici.parser.ts
+
+export interface ICICIStatementSummary {
+  bank: "ICICI";
+  statementPeriod: {
+    from: string;
+    to: string;
+  };
+  currentBalance: number;
+}
+
 type ParsedStatementInput = {
   text?: string;
   pages?: Array<{ text?: string; num?: number }>;
 };
 
-type StatementSummary = {
-  accountNumberMasked?: string;
-  accountBalance?: number | null;
-  statementPeriod?: { from?: string; to?: string };
-};
-
-const sanitizeNumber = (value?: string | null) => {
-  if (!value) return null;
-  const numeric = value.replace(/,/g, "").match(/\d+(?:\.\d{1,2})?/);
-  return numeric ? Number(numeric[0]) : null;
-};
-
-const extractText = (parsedData: ParsedStatementInput) => {
-  if (parsedData?.text && parsedData.text.trim()) return parsedData.text;
-  if (Array.isArray(parsedData?.pages)) {
-    return parsedData.pages.map((page) => page?.text ?? "").join("\n");
-  }
-  return "";
-};
-
 export const ICICIparseStatementSummary = (
   parsedData: ParsedStatementInput,
-): StatementSummary => {
-  const text = extractText(parsedData);
+): ICICIStatementSummary => {
+  /**
+   * 1️⃣ Extract statement period
+   * Example:
+   * for the period November 01, 2025 - November 30, 2025
+   */
+  const periodRegex =
+    /for the period\s+([A-Za-z]+\s+\d{2},\s+\d{4})\s*-\s*([A-Za-z]+\s+\d{2},\s+\d{4})/i;
 
-  const accountNumberMatch = text.match(/Savings\s+A\/c\s+([X\d]+)/i);
-  const accountBalanceMatch = text.match(
-    /ACCOUNT\s+BALANCE\s*\(I\)[\s\S]*?\n[^\n]*?\s([\d,]+(?:\.\d{2})?)/i,
-  );
-  const totalBalanceMatch = text.match(/TOTAL\s+([\d,]+(?:\.\d{2})?)/i);
-  const periodMatch = text.match(
-    /period\s+([A-Za-z]{3,}\s+\d{2},\s+\d{4})\s+-\s+([A-Za-z]{3,}\s+\d{2},\s+\d{4})/i,
-  );
+  const text =
+    parsedData.text ??
+    parsedData.pages?.map((page) => page.text ?? "").join("\n") ??
+    "";
+
+  const periodMatch = text.match(periodRegex);
+
+  if (!periodMatch) {
+    throw new Error("ICICI: Statement period not found");
+  }
+
+  const [, from, to] = periodMatch;
+
+  /**
+   * 2️⃣ Extract ALL balances from transaction rows
+   *
+   * Transaction rows end with:
+   * <amount> <balance>
+   * Example:
+   * 237.00 54,680.36
+   */
+  const balanceRegex = /\s([\d,]+\.\d{2})\s*$/gm;
+
+  const balances: number[] = [];
+  let match: RegExpExecArray | null;
+
+  while ((match = balanceRegex.exec(text)) !== null) {
+    balances.push(parseFloat(match[1].replace(/,/g, "")));
+  }
+
+  if (balances.length === 0) {
+    throw new Error("ICICI: No balances found");
+  }
+
+  /**
+   * ✅ Last balance = current balance
+   */
+  const currentBalance = balances[balances.length - 1];
 
   return {
-    accountNumberMasked: accountNumberMatch?.[1]?.trim(),
-    accountBalance:
-      sanitizeNumber(accountBalanceMatch?.[1]) ??
-      sanitizeNumber(totalBalanceMatch?.[1]),
-    statementPeriod: periodMatch
-      ? { from: periodMatch[1].trim(), to: periodMatch[2].trim() }
-      : undefined,
+    bank: "ICICI",
+    statementPeriod: {
+      from,
+      to,
+    },
+    currentBalance,
   };
 };
