@@ -1,5 +1,3 @@
-// src/services/parsers/sbi.parser.ts
-
 export interface SBIStatementSummary {
   bank: "SBI";
   statementPeriod: {
@@ -14,23 +12,37 @@ type ParsedStatementInput = {
   pages?: Array<{ text?: string; num?: number }>;
 };
 
-const extractText = (parsedData: ParsedStatementInput) => {
-  if (parsedData?.text && parsedData.text.trim()) return parsedData.text;
+/**
+ * Safely extracts full text from parsed PDF
+ */
+const extractText = (parsedData: ParsedStatementInput): string => {
+  if (parsedData?.text?.trim()) return parsedData.text;
+
   if (Array.isArray(parsedData?.pages)) {
     return parsedData.pages.map((page) => page?.text ?? "").join("\n");
   }
+
   return "";
+};
+
+/**
+ * Converts amount + CR/DR to signed number
+ */
+const parseSignedAmount = (amount: string, type: string): number => {
+  const value = parseFloat(amount.replace(/,/g, ""));
+  return type.toUpperCase() === "DR" ? -value : value;
 };
 
 export const SBIparseStatementSummary = (
   parsedData: ParsedStatementInput,
 ): SBIStatementSummary => {
   const text = extractText(parsedData);
-  /**
+
+  /* -----------------------------------------------------
    * 1️⃣ Extract statement period
    * Example:
-   * Statement From : 01-12-2025 to 31-12-2025
-   */
+   * Statement From : 01-01-2026 to 31-01-2026
+   * --------------------------------------------------- */
   const periodRegex =
     /Statement\s+From\s*:\s*(\d{2}-\d{2}-\d{4})\s+to\s+(\d{2}-\d{2}-\d{4})/i;
 
@@ -42,32 +54,61 @@ export const SBIparseStatementSummary = (
 
   const [, from, to] = periodMatch;
 
-  /**
-   * 2️⃣ Extract closing balance
-   * Example:
-   * Closing Balance
-   * 6,620.62CR
-   */
-  const closingBalanceRegex = /Closing\s+Balance\s+([\d,]+\.\d{2})(CR|DR)/i;
+  /* -----------------------------------------------------
+   * 2️⃣ Extract CURRENT balance (priority based)
+   *
+   * Priority:
+   * 1. Clear Balance
+   * 2. Closing Balance (₹)
+   * 3. Last transaction balance (fallback)
+   * --------------------------------------------------- */
+
+  // ✅ Priority 1: Clear Balance (BEST & most reliable)
+  const clearBalanceRegex = /Clear\s+Balance\s*:\s*([\d,]+\.\d{2})(CR|DR)/i;
+
+  const clearBalanceMatch = text.match(clearBalanceRegex);
+
+  if (clearBalanceMatch) {
+    const [, amount, type] = clearBalanceMatch;
+
+    return {
+      bank: "SBI",
+      statementPeriod: { from, to },
+      currentBalance: parseSignedAmount(amount, type),
+    };
+  }
+
+  // ✅ Priority 2: Closing Balance from summary table
+  const closingBalanceRegex =
+    /Closing\s+Balance\s*\(₹\)\s*([\d,]+\.\d{2})(CR|DR)/i;
 
   const closingBalanceMatch = text.match(closingBalanceRegex);
 
-  if (!closingBalanceMatch) {
-    throw new Error("SBI: Closing balance not found");
+  if (closingBalanceMatch) {
+    const [, amount, type] = closingBalanceMatch;
+
+    return {
+      bank: "SBI",
+      statementPeriod: { from, to },
+      currentBalance: parseSignedAmount(amount, type),
+    };
   }
 
-  const amount = parseFloat(closingBalanceMatch[1].replace(/,/g, ""));
+  // ✅ Priority 3: Last transaction balance (fallback)
+  // Matches the LAST balance column value in the statement
+  const balanceColumnRegex = /(\d{1,3}(?:,\d{3})*\.\d{2})\s*$/gm;
 
-  const balanceType = closingBalanceMatch[2];
+  const allBalances = [...text.matchAll(balanceColumnRegex)];
 
-  const currentBalance = balanceType === "DR" ? -amount : amount;
+  if (allBalances.length > 0) {
+    const lastBalance = allBalances[allBalances.length - 1][1];
 
-  return {
-    bank: "SBI",
-    statementPeriod: {
-      from,
-      to,
-    },
-    currentBalance,
-  };
+    return {
+      bank: "SBI",
+      statementPeriod: { from, to },
+      currentBalance: parseFloat(lastBalance.replace(/,/g, "")),
+    };
+  }
+
+  throw new Error("SBI: Unable to determine current balance");
 };
