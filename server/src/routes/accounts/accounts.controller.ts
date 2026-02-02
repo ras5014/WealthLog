@@ -120,4 +120,14 @@ export const fetchBalance = async (
   req: Request,
   res: Response,
   next: NextFunction,
-) => {};
+) => {
+  try {
+    const accounts = await prisma.accounts.findMany();
+    successResponse(res, {
+      message: "Accounts fetched successfully",
+      data: accounts,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import multer from "multer";
 import path from "path";
-import { uploadStatement } from "./accounts.controller";
+import { fetchBalance, uploadStatement } from "./accounts.controller";
 
 // Initialize multer for file uploads
 const upload = multer({
@@ -24,6 +24,6 @@ accountsRouter.post(
   upload.single("statement"),
   uploadStatement,
 );
-accountsRouter.get("/balances", () => {});
+accountsRouter.get("/balances", fetchBalance);
 
 export default accountsRouter;

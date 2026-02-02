@@ -1,0 +1,16 @@
+meta {
+  name: Fetch Account Balance
+  type: http
+  seq: 6
+}
+
+get {
+  url: http://localhost:8080/api/accounts/v1/balances
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
