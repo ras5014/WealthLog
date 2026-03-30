@@ -5,6 +5,8 @@ export interface CreditCardTransaction {
   type: "Dr" | "Cr";
   referenceNumber: string;
   statementPeriod: string;
+  bank: string;
+  description?: string;
 }
 
 export interface ParsedStatementResult {

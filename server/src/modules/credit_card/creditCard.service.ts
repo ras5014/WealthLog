@@ -2,9 +2,9 @@ import type {
   CreditCardTransaction,
   ParsedStatementResult,
 } from "./creditCard.types.ts";
-
-// In-memory store for deduplication: statementPeriod -> Set of referenceNumbers
-const processedTransactions = new Map<string, Set<string>>();
+import db from "../../db/connection.ts";
+import { creditCardTransactions } from "../../db/schema.ts";
+import { and, eq, inArray } from "drizzle-orm";
 
 const EMI_PREFIXES = [
   "Principal Amount Amortization",
@@ -82,29 +82,45 @@ export const extractTransactionsFromPDF = async (
       type: match[4] === "Dr." ? "Dr" : "Cr",
       referenceNumber: match[5],
       statementPeriod: `${statementStartDate} TO ${statementEndDate}`,
+      bank: "ICICI_CORAL",
     });
   }
 
-  // 6. Deduplicate against previously processed transactions for this period
+  // 6. Deduplicate against existing DB records for this statement period
   const statementPeriod = `${statementStartDate} TO ${statementEndDate}`;
-  if (!processedTransactions.has(statementPeriod)) {
-    processedTransactions.set(statementPeriod, new Set());
-  }
-  // Safe: we just ensured the key exists above
-  const existingRefs = processedTransactions.get(statementPeriod) ?? new Set();
+  const refNumbers = allTransactions.map((t) => t.referenceNumber);
+
+  const existingRows = await db
+    .select({ referenceNumber: creditCardTransactions.referenceNumber })
+    .from(creditCardTransactions)
+    .where(
+      and(
+        eq(creditCardTransactions.statementPeriod, statementPeriod),
+        inArray(creditCardTransactions.referenceNumber, refNumbers),
+      ),
+    );
+
+  const existingRefs = new Set(existingRows.map((r) => r.referenceNumber));
 
   const newTransactions = allTransactions.filter(
     (t) => !existingRefs.has(t.referenceNumber),
   );
   const duplicateCount = allTransactions.length - newTransactions.length;
 
-  // Record the new reference numbers so future uploads won't duplicate them
-  for (const t of newTransactions) {
-    existingRefs.add(t.referenceNumber);
+  // 7. Persist new transactions to the database
+  if (newTransactions.length > 0) {
+    await db.insert(creditCardTransactions).values(
+      newTransactions.map((t) => ({
+        transactionDate: t.transactionDate.split("-").reverse().join("-"), // DD-MM-YYYY -> YYYY-MM-DD
+        details: t.details,
+        amount: t.amount.toString(),
+        type: t.type,
+        referenceNumber: t.referenceNumber,
+        statementPeriod: t.statementPeriod,
+        bank: "ICICI_CORAL",
+      })),
+    );
   }
-
-  // TODO: Persist newTransactions to the database
-  // TODO: Once DB is set up, replace the in-memory deduplication above with a DB lookup
 
   return {
     statementPeriod,
