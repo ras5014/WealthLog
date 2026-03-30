@@ -11,13 +11,22 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@epic-web/remember": "^1.1.0",
     "@types/express": "^5.0.6",
     "@types/node": "^25.5.0",
+    "custom-env": "^2.0.6",
+    "dotenv": "^17.3.1",
+    "drizzle-orm": "^0.45.2",
     "express": "^5.2.1",
     "multer": "^2.1.1",
-    "pdf-parse": "^2.4.5"
+    "pdf-parse": "^2.4.5",
+    "pg": "^8.20.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@types/multer": "^2.1.0"
+    "@types/multer": "^2.1.0",
+    "@types/pg": "^8.20.0",
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.21.0"
   }
 }

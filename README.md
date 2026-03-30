@@ -24,6 +24,7 @@
 - If I upload second time after some days in the same statement period cycle then data duplication shouldn't happen Example already existing transactions shouldn't get duplicated or added again. Only new transactions should be added
 - Some default categorization of spends can be done with AI
 - If transaction details starts with "Principal Amount Amortization" or "Interest Amount Amortization" then this is related to EMI payments. (Which I will calculate differently) So exclude it from the transactions
+- Option to make a transaction emi type and exclude it -> Later use it to calculate Projected EMI
 #### To Check & Verify
 - Check Total Amount due & BBPS Payment received [Exclude this field from transactions], If they are same, then credit card bill for the previous cycle is paid fully, If not then for now I don't know how the statement behaves in the coming cycle.
 ---

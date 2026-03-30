@@ -24,7 +24,6 @@ export const extractTransactionsFromPDF = async (
 
   const statementStartDate = periodMatch[1];
   const statementEndDate = periodMatch[2];
-  const statementPeriod = `${statementStartDate} TO ${statementEndDate}`;
 
   // Extract Total Amount Due
   const totalDueRegex = /Total Amount Due\s+INR\s+([\d,]+(?:\.\d{1,2})?)/;
@@ -82,11 +81,12 @@ export const extractTransactionsFromPDF = async (
       amount: Number.parseFloat(match[3].replaceAll(",", "")),
       type: match[4] === "Dr." ? "Dr" : "Cr",
       referenceNumber: match[5],
-      statementPeriod,
+      statementPeriod: `${statementStartDate} TO ${statementEndDate}`,
     });
   }
 
   // 6. Deduplicate against previously processed transactions for this period
+  const statementPeriod = `${statementStartDate} TO ${statementEndDate}`;
   if (!processedTransactions.has(statementPeriod)) {
     processedTransactions.set(statementPeriod, new Set());
   }

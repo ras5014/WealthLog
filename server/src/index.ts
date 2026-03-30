@@ -1,5 +1,6 @@
 import app from "./server.ts";
+import { env } from "./config/env.ts";
 
-app.listen(8080, () => {
-  console.log(`Server is running on port 8080`);
+app.listen(env.PORT, () => {
+  console.log(`Server is running on port ${env.PORT}`);
 });
