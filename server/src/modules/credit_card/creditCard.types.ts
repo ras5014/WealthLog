@@ -4,13 +4,13 @@ export interface CreditCardTransaction {
   amount: number;
   type: "Dr" | "Cr";
   referenceNumber: string;
-  statementPeriod: string;
+  statementStartDate: string;
+  statementEndDate: string;
   bank: string;
   description?: string;
 }
 
 export interface ParsedStatementResult {
-  statementPeriod: string;
   statementStartDate: string;
   statementEndDate: string;
   totalAmountDue: number;

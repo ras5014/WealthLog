@@ -16,14 +16,16 @@ export const creditCardTransactions = pgTable(
     amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
     type: varchar("type", { length: 2, enum: ["Dr", "Cr"] }).notNull(),
     referenceNumber: varchar("reference_number", { length: 64 }).notNull(),
-    statementPeriod: varchar("statement_period", { length: 64 }).notNull(),
+    statementStartDate: date("statement_start_date").notNull(),
+    statementEndDate: date("statement_end_date").notNull(),
     bank: varchar("bank", { length: 64 }).notNull(),
     description: varchar("description", { length: 512 }),
   },
   (table) => [
     uniqueIndex("uq_ref_statement").on(
       table.referenceNumber,
-      table.statementPeriod,
+      table.statementStartDate,
+      table.statementEndDate,
     ),
   ],
 );

@@ -81,13 +81,13 @@ export const extractTransactionsFromPDF = async (
       amount: Number.parseFloat(match[3].replaceAll(",", "")),
       type: match[4] === "Dr." ? "Dr" : "Cr",
       referenceNumber: match[5],
-      statementPeriod: `${statementStartDate} TO ${statementEndDate}`,
+      statementStartDate,
+      statementEndDate,
       bank: "ICICI_CORAL",
     });
   }
 
   // 6. Deduplicate against existing DB records for this statement period
-  const statementPeriod = `${statementStartDate} TO ${statementEndDate}`;
   const refNumbers = allTransactions.map((t) => t.referenceNumber);
 
   const existingRows = await db
@@ -95,7 +95,14 @@ export const extractTransactionsFromPDF = async (
     .from(creditCardTransactions)
     .where(
       and(
-        eq(creditCardTransactions.statementPeriod, statementPeriod),
+        eq(
+          creditCardTransactions.statementStartDate,
+          statementStartDate.split("-").reverse().join("-"),
+        ),
+        eq(
+          creditCardTransactions.statementEndDate,
+          statementEndDate.split("-").reverse().join("-"),
+        ),
         inArray(creditCardTransactions.referenceNumber, refNumbers),
       ),
     );
@@ -116,14 +123,14 @@ export const extractTransactionsFromPDF = async (
         amount: t.amount.toString(),
         type: t.type,
         referenceNumber: t.referenceNumber,
-        statementPeriod: t.statementPeriod,
+        statementStartDate: t.statementStartDate.split("-").reverse().join("-"), // DD-MM-YYYY -> YYYY-MM-DD
+        statementEndDate: t.statementEndDate.split("-").reverse().join("-"), // DD-MM-YYYY -> YYYY-MM-DD
         bank: "ICICI_CORAL",
       })),
     );
   }
 
   return {
-    statementPeriod,
     statementStartDate,
     statementEndDate,
     totalAmountDue,
