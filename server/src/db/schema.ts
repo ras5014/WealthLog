@@ -25,7 +25,6 @@ export const creditCardTransactions = pgTable(
     uniqueIndex("uq_ref_statement").on(
       table.referenceNumber,
       table.statementStartDate,
-      table.statementEndDate,
     ),
   ],
 );

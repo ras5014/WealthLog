@@ -5,11 +5,7 @@ import type {
 import db from "../../db/connection.ts";
 import { creditCardTransactions } from "../../db/schema.ts";
 import { and, eq, inArray } from "drizzle-orm";
-
-const EMI_PREFIXES = [
-  "Principal Amount Amortization",
-  "Interest Amount Amortization",
-];
+import { PREFIXES_TO_EXCLUDE } from "../../config/constants.ts";
 
 export const extractTransactionsFromPDF = async (
   pdfText: string,
@@ -69,8 +65,8 @@ export const extractTransactionsFromPDF = async (
       .replaceAll(/\s+/g, " ")
       .trim();
 
-    // 5. Exclude EMI-related transactions
-    if (EMI_PREFIXES.some((prefix) => details.startsWith(prefix))) {
+    // 5. Exclude transactions with specific prefixes
+    if (PREFIXES_TO_EXCLUDE.some((prefix) => details.startsWith(prefix))) {
       emiExcludedCount++;
       continue;
     }
@@ -98,10 +94,6 @@ export const extractTransactionsFromPDF = async (
         eq(
           creditCardTransactions.statementStartDate,
           statementStartDate.split("-").reverse().join("-"),
-        ),
-        eq(
-          creditCardTransactions.statementEndDate,
-          statementEndDate.split("-").reverse().join("-"),
         ),
         inArray(creditCardTransactions.referenceNumber, refNumbers),
       ),
