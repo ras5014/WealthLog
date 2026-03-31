@@ -25,7 +25,8 @@
 - Some default categorization of spends can be done with AI
 - If transaction details starts with "Principal Amount Amortization" or "Interest Amount Amortization" then this is related to EMI payments. (Which I will calculate differently) So exclude it from the transactions
 - Option to make a transaction emi type and exclude it -> Later use it to calculate Projected EMI
+- Don't let User upload a older current statement. Current Statement Period end date has to be today's date.
+- Next Billing Cycle's Due will be "totalAmountDue". It is present the "/api/v1/credit-card/synchronize" API
 #### To Check & Verify
-- Check Total Amount due & BBPS Payment received [Exclude this field from transactions], If they are same, then credit card bill for the previous cycle is paid fully, If not then for now I don't know how the statement behaves in the coming cycle.
 ---
 

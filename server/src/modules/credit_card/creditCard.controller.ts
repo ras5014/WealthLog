@@ -3,10 +3,7 @@ import { PDFParse } from "pdf-parse";
 import { readFile, unlink } from "node:fs/promises";
 import { extractTransactionsFromPDF } from "./creditCard.service.ts";
 
-export const process_ICICI_CORAL_Statement = async (
-  req: Request,
-  res: Response,
-) => {
+export const process_ICICIStatement = async (req: Request, res: Response) => {
   // Check if a file was uploaded
   if (!req.file) {
     return res.status(400).json({ error: "No file provided" });

@@ -1,4 +1,5 @@
 export interface CreditCardTransaction {
+  cardNumber: string; // Optional, used for deduplication and bank identification
   transactionDate: string;
   details: string;
   amount: number;
@@ -11,6 +12,8 @@ export interface CreditCardTransaction {
 }
 
 export interface ParsedStatementResult {
+  cardHolderName: string;
+  cardNumber: string;
   statementStartDate: string;
   statementEndDate: string;
   totalAmountDue: number;
