@@ -1,9 +1,15 @@
-import { Outlet, Link } from 'react-router'
+import { Outlet } from 'react-router'
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/app-sidebar"
 
 export default function MainLayout() {
     return (
-        <div>
-
-        </div>
+        <SidebarProvider>
+            <AppSidebar />
+            <main>
+                <SidebarTrigger />
+                <Outlet />
+            </main>
+        </SidebarProvider>
     )
 }
