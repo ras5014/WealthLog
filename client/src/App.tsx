@@ -1,6 +1,7 @@
 import { createBrowserRouter } from "react-router";
 import { RouterProvider } from "react-router/dom";
 import MainLayout from "./layouts/MainLayout";
+import CreditCardPage from "./features/credit_card";
 
 function PagePlaceholder({ title }: { title: string }) {
     return <div>{title}</div>;
@@ -22,7 +23,7 @@ const router = createBrowserRouter([
             },
             {
                 path: "credit-card",
-                Component: () => <PagePlaceholder title="Credit Cards" />,
+                Component: CreditCardPage,
             },
             {
                 path: "emis",
