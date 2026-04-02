@@ -1,15 +1,36 @@
 import { Outlet } from 'react-router'
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
+import { ThemeProvider } from "@/components/theme-provider"
+import { ModeToggle } from "@/components/mode-toggle"
+import { Bell, CircleUser } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 export default function MainLayout() {
     return (
-        <SidebarProvider>
-            <AppSidebar />
-            <main>
-                <SidebarTrigger />
-                <Outlet />
-            </main>
-        </SidebarProvider>
+        <ThemeProvider defaultTheme="system" storageKey="wealthlog-ui-theme">
+            <SidebarProvider>
+                <AppSidebar />
+                <div className="flex flex-col flex-1 overflow-hidden">
+                    <header className="flex h-14 items-center gap-2 border-b px-4">
+                        <SidebarTrigger />
+                        <div className="ml-auto flex items-center gap-1">
+                            <Button variant="ghost" size="icon">
+                                <Bell className="h-5 w-5" />
+                                <span className="sr-only">Notifications</span>
+                            </Button>
+                            <ModeToggle />
+                            <Button variant="ghost" size="icon">
+                                <CircleUser className="h-5 w-5" />
+                                <span className="sr-only">User</span>
+                            </Button>
+                        </div>
+                    </header>
+                    <main className="flex-1 overflow-auto p-4">
+                        <Outlet />
+                    </main>
+                </div>
+            </SidebarProvider>
+        </ThemeProvider>
     )
 }
