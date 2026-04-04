@@ -153,3 +153,43 @@ export const extractTransactionsFromPDF = async (
     emiExcludedCount,
   };
 };
+
+export const getAllLatestTransactions = async () => {
+  const latestTransaction = await db.query.creditCardTransactions.findFirst({
+    columns: {
+      statementStartDate: true,
+    },
+    orderBy: (transactions, { desc }) => [desc(transactions.transactionDate)],
+  });
+
+  const transactions = await db.query.creditCardTransactions.findMany({
+    columns: {
+      id: true,
+      transactionDate: true,
+      details: true,
+      amount: true,
+      type: true,
+      referenceNumber: true,
+      statementStartDate: true,
+      statementEndDate: true,
+      bank: true,
+    },
+    where: (transactions, { eq }) =>
+      eq(
+        transactions.statementStartDate,
+        latestTransaction?.statementStartDate || "",
+      ),
+    orderBy: (transactions, { desc }) => [desc(transactions.transactionDate)],
+  });
+
+  const today = new Date().toISOString().split("T")[0];
+  const totalDayPassed = latestTransaction
+    ? Math.ceil(
+        (new Date(today).getTime() -
+          new Date(latestTransaction.statementStartDate).getTime()) /
+          (1000 * 60 * 60 * 24),
+      )
+    : 0;
+
+  return { transactions, totalDayPassed };
+};

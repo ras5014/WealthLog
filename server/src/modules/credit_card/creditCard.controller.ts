@@ -1,7 +1,10 @@
 import type { Request, Response } from "express";
 import { PDFParse } from "pdf-parse";
 import { readFile, unlink } from "node:fs/promises";
-import { extractTransactionsFromPDF } from "./creditCard.service.ts";
+import {
+  extractTransactionsFromPDF,
+  getAllLatestTransactions,
+} from "./creditCard.service.ts";
 
 export const process_ICICIStatement = async (req: Request, res: Response) => {
   // Check if a file was uploaded
@@ -24,5 +27,15 @@ export const process_ICICIStatement = async (req: Request, res: Response) => {
   } finally {
     await parser.destroy();
     await unlink(filePath).catch(() => undefined);
+  }
+};
+
+export const getTransactions = async (req: Request, res: Response) => {
+  try {
+    const result = await getAllLatestTransactions();
+    res.status(200).json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch transactions" });
   }
 };
