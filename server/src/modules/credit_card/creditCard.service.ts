@@ -158,6 +158,7 @@ export const getAllLatestTransactions = async () => {
   const latestTransaction = await db.query.creditCardTransactions.findFirst({
     columns: {
       statementStartDate: true,
+      statementEndDate: true,
     },
     orderBy: (transactions, { desc }) => [desc(transactions.transactionDate)],
   });
@@ -182,13 +183,12 @@ export const getAllLatestTransactions = async () => {
     orderBy: (transactions, { desc }) => [desc(transactions.transactionDate)],
   });
 
-  const today = new Date().toISOString().split("T")[0];
   const totalDayPassed = latestTransaction
     ? Math.ceil(
-        (new Date(today).getTime() -
+        (new Date(latestTransaction.statementEndDate).getTime() -
           new Date(latestTransaction.statementStartDate).getTime()) /
           (1000 * 60 * 60 * 24),
-      )
+      ) + 1
     : 0;
 
   return { transactions, totalDayPassed };
