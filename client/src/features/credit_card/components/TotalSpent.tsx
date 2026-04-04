@@ -1,26 +1,43 @@
-import { ArrowDownRight, ArrowUpRight, Flame, Wallet2 } from "lucide-react"
+import {
+    ArrowDownRight,
+    ArrowUpRight,
+    CalendarRange,
+    Flame,
+} from "lucide-react"
 
 import {
     Card,
     CardContent,
-    CardDescription,
     CardHeader,
     CardTitle,
 } from "@/components/ui/card"
-import { cn, formatCurrency, percentFormatter } from "@/lib/utils"
+import { cn, formatBillingCyclePeriod, formatCurrency, percentFormatter } from "@/lib/utils"
 import type { TotalSpentProps } from "../types"
 
-const defaultStats = {
-    totalSpent: 18420,
-    burnRatePerDay: 1535,
-    lastMonthSameTimeSpend: 16980,
-};
+const defaultProps = {
+    totalSpent: 0,
+    burnRatePerDay: 0,
+    lastMonthSameTimeSpend: 0,
+    billingCycleStartDate: "",
+    billingCycleEndDate: "",
+}
 
 export default function TotalSpent(props: Readonly<TotalSpentProps>) {
-    const { totalSpent, burnRatePerDay, lastMonthSameTimeSpend } = {
-        ...defaultStats,
+    const {
+        totalSpent,
+        burnRatePerDay,
+        lastMonthSameTimeSpend,
+        billingCycleStartDate,
+        billingCycleEndDate,
+    } = {
+        ...defaultProps,
         ...props,
     }
+
+    const billingCyclePeriod = formatBillingCyclePeriod(
+        billingCycleStartDate,
+        billingCycleEndDate
+    )
 
     const trend =
         lastMonthSameTimeSpend === 0
@@ -31,43 +48,62 @@ export default function TotalSpent(props: Readonly<TotalSpentProps>) {
     const TrendIcon = isUp ? ArrowUpRight : ArrowDownRight
 
     return (
-        <Card className="flex-1">
-            <CardHeader className="border-b border-border/60">
+        <Card className="flex-1 overflow-hidden border-border/60 bg-linear-to-br from-card via-card to-muted/20">
+            <CardHeader className="gap-4 border-b border-border/60 bg-muted/10">
                 <div className="flex items-start justify-between gap-3">
-                    <div>
-                        <CardTitle>Total Spend</CardTitle>
-                        <CardDescription>Current billing cycle</CardDescription>
+                    <div className="space-y-1">
+                        <CardTitle className="text-base font-semibold">Total Spend</CardTitle>
                     </div>
 
-                    <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                        <Wallet2 className="size-5" />
-                    </div>
+                    {billingCyclePeriod && (
+                        <div className="inline-flex w-fit items-center gap-2 rounded-full border border-border/60 bg-background/70 px-3 py-1.5 text-xs font-medium text-muted-foreground">
+                            <CalendarRange className="size-3.5" />
+                            <span>{billingCyclePeriod}</span>
+                        </div>
+                    )}
                 </div>
             </CardHeader>
 
-            <CardContent className="space-y-5 pt-4">
-                <div>
-                    <p className="text-3xl font-semibold tracking-tight">
+            <CardContent className="space-y-6">
+                <div className="space-y-1">
+                    <p className="text-4xl font-semibold tracking-tight text-foreground">
                         {formatCurrency(totalSpent)}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                        Total card spend recorded for this statement period
                     </p>
                 </div>
 
-                <div className="space-y-3">
-                    <div className="flex items-center justify-between text-sm">
+                <div className="grid gap-3">
+                    <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-background/50 px-3 py-3 text-sm">
                         <span className="inline-flex items-center gap-2 text-muted-foreground">
-                            <Flame className="size-4" />
-                            Burn rate
+                            <span className="flex size-8 items-center justify-center rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-300">
+                                <Flame className="size-4" />
+                            </span>
+                            <span>Burn rate</span>
                         </span>
-                        <span className="font-medium">
+                        <span className="font-semibold text-foreground">
                             {formatCurrency(burnRatePerDay)}/day
                         </span>
                     </div>
 
-                    <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Vs last month</span>
+                    <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-background/50 px-3 py-3 text-sm">
+                        <span className="inline-flex items-center gap-2 text-muted-foreground">
+                            <span
+                                className={cn(
+                                    "flex size-8 items-center justify-center rounded-full",
+                                    isUp
+                                        ? "bg-rose-500/10 text-rose-600 dark:text-rose-300"
+                                        : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                                )}
+                            >
+                                <TrendIcon className="size-4" />
+                            </span>
+                            <span>Vs last month</span>
+                        </span>
                         <span
                             className={cn(
-                                "inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-medium",
+                                "inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-semibold",
                                 isUp
                                     ? "bg-rose-500/10 text-rose-600 dark:text-rose-300"
                                     : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
