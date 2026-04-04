@@ -1,5 +1,24 @@
+export type CreditCardTransaction = {
+  id: number;
+  transactionDate: string;
+  details: string;
+  amount: string | number;
+  type: "Dr" | "Cr";
+  referenceNumber: string;
+  statementStartDate: string;
+  statementEndDate: string;
+  bank: string;
+};
+
+export type TransactionsResponse = {
+  transactions: CreditCardTransaction[];
+  totalDayPassed: number;
+};
+
 export type TotalSpentProps = {
   totalSpent?: number;
   burnRatePerDay?: number;
   lastMonthSameTimeSpend?: number;
+  billingCycleStartDate?: string;
+  billingCycleEndDate?: string;
 };
