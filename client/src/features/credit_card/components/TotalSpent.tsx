@@ -10,7 +10,7 @@ export default function TotalSpent() {
     return (
         <Card className="flex-1">
             <CardHeader>
-                <CardTitle>Card Title</CardTitle>
+                <CardTitle>Total Spent</CardTitle>
                 <CardDescription>Card Description</CardDescription>
             </CardHeader>
             <CardContent>
