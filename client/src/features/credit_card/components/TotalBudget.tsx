@@ -6,11 +6,11 @@ import {
     CardTitle,
 } from "@/components/ui/card"
 
-export default function TotalSpent() {
+export default function TotalBudget() {
     return (
         <Card className="flex-1">
             <CardHeader>
-                <CardTitle>Total Spent</CardTitle>
+                <CardTitle>Monthly Budget</CardTitle>
                 <CardDescription>Card Description</CardDescription>
             </CardHeader>
             <CardContent>
