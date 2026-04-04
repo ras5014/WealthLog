@@ -3,6 +3,7 @@ import {
     ArrowUpRight,
     CalendarRange,
     Flame,
+    Wallet2
 } from "lucide-react"
 
 import {
@@ -51,7 +52,8 @@ export default function TotalSpent(props: Readonly<TotalSpentProps>) {
         <Card className="flex-1 overflow-hidden border-border/60 bg-linear-to-br from-card via-card to-muted/20">
             <CardHeader className="gap-4 border-b border-border/60 bg-muted/10">
                 <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
+                    <div className="space-y-1 flex items-center gap-2">
+                        <Wallet2 className="size-6 text-muted-foreground" />
                         <CardTitle className="text-base font-semibold">Total Spend</CardTitle>
                     </div>
 
