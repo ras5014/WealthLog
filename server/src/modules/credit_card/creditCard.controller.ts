@@ -5,6 +5,8 @@ import {
   extractTransactionsFromPDF,
   getAllLatestTransactions,
 } from "./creditCard.service.ts";
+import db from "../../db/connection.ts";
+import { creditCardBudget } from "../../db/schema.ts";
 
 export const process_ICICIStatement = async (req: Request, res: Response) => {
   // Check if a file was uploaded
@@ -37,5 +39,29 @@ export const getTransactions = async (req: Request, res: Response) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to fetch transactions" });
+  }
+};
+
+export const getBudget = async (req: Request, res: Response) => {
+  try {
+    const result = await db.select().from(creditCardBudget).limit(1);
+    res.status(200).json(result[0] || { amount: 0 });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch budget" });
+  }
+};
+
+export const setBudget = async (req: Request, res: Response) => {
+  try {
+    const { amount } = req.body;
+    if (typeof amount !== "number") {
+      return res.status(400).json({ error: "Invalid amount" });
+    }
+    await db.insert(creditCardBudget).values({ amount: amount.toString() });
+    res.status(200).json({ message: "Budget set successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to set budget" });
   }
 };

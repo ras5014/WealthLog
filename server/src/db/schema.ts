@@ -29,3 +29,8 @@ export const creditCardTransactions = pgTable(
     ),
   ],
 );
+
+export const creditCardBudget = pgTable("credit_card_budget", {
+  id: serial("id").primaryKey(),
+  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+});
