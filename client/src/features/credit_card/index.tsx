@@ -24,7 +24,8 @@ export default function Index() {
         <>
             {isPending && <p>Loading...</p>}
             {isError && <p>Error loading data</p>}
-            <div className="flex gap-4">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <TotalBudget totalSpends={totalSpends} />
                 <TotalSpent
                     totalSpent={totalSpends}
                     burnRatePerDay={burnRatePerDay}
@@ -32,17 +33,8 @@ export default function Index() {
                     billingCycleStartDate={currentBillingCycle?.statementStartDate}
                     billingCycleEndDate={currentBillingCycle?.statementEndDate}
                 />
-                <TotalBudget />
                 <CategorySpendChart />
-                <Card className="flex-1">
-                    <CardHeader>
-                        <CardTitle>Card Title</CardTitle>
-                        <CardDescription>Card Description</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <p>Card Content</p>
-                    </CardContent>
-                </Card>
+                <CategorySpendChart />
             </div>
         </>
     )
