@@ -44,6 +44,6 @@ export default function TopBarActionsForCreditCard() {
             </DropdownMenu>
 
             <SetBudget />
-        </div>
+        </div >
     )
 }
