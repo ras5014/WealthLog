@@ -2,6 +2,7 @@ import { createBrowserRouter } from "react-router";
 import { RouterProvider } from "react-router/dom";
 import MainLayout from "./layouts/MainLayout";
 import CreditCardPage from "./features/credit_card";
+import { Toaster } from 'react-hot-toast'
 
 function PagePlaceholder({ title }: { title: string }) {
     return <div>{title}</div>;
@@ -47,9 +48,13 @@ const router = createBrowserRouter([
 
 export const App = () => {
     return (
-        <QueryClientProvider client={queryClient}>
-            <RouterProvider router={router} />
-            <ReactQueryDevtools initialIsOpen={false} />
-        </QueryClientProvider>
+        <>
+            <Toaster />
+            <QueryClientProvider client={queryClient}>
+                <RouterProvider router={router} />
+                <ReactQueryDevtools initialIsOpen={false} />
+            </QueryClientProvider>
+        </>
+
     );
 };

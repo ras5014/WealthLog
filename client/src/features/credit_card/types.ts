@@ -1,3 +1,5 @@
+import z from "zod";
+
 export type CreditCardTransaction = {
   id: number;
   transactionDate: string;
@@ -22,3 +24,9 @@ export type TotalSpentProps = {
   billingCycleStartDate?: string;
   billingCycleEndDate?: string;
 };
+
+export const BudgetSchema = z.object({
+  amount: z.number().min(0, "Amount must be a positive number"),
+});
+
+export type BudgetType = z.infer<typeof BudgetSchema>;

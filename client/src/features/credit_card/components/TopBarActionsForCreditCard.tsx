@@ -9,8 +9,10 @@ import {
 import { Button } from "@/components/ui/button"
 import { ChevronDown } from "lucide-react"
 import SetBudget from "./SetBudget"
+import { useGetBudget } from "../hooks/useBudget"
 
 export default function TopBarActionsForCreditCard() {
+    const { data: budgetData } = useGetBudget();
     const [selectedBank, setSelectedBank] = useState<(typeof BANK_OPTIONS)[number]>(BANK_OPTIONS[0])
     return (
         <div className="flex flex-wrap items-center gap-3">
@@ -39,7 +41,7 @@ export default function TopBarActionsForCreditCard() {
                     ))}
                 </DropdownMenuContent>
             </DropdownMenu>
-            <SetBudget />
+            <SetBudget budgetAmount={budgetData?.amount} />
         </div>
     )
 

@@ -14,22 +14,25 @@ import z from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { Input } from "@/components/ui/input"
+import { BudgetSchema } from "../types"
+import { useSetBudget } from "../hooks/useBudget"
 
-const formSchema = z.object({
-    amount: z.number().min(0, "Amount must be a positive number"),
-})
+const formSchema = BudgetSchema
 
-export default function SetBudget() {
+export default function SetBudget({ budgetAmount }: { budgetAmount?: number }) {
+
+    console.log("Budget data in SetBudget component:", budgetAmount);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            amount: 0,
+            amount: budgetAmount || 0,
         },
     })
 
+    const { mutateAsync: setBudget } = useSetBudget();
     function onSubmit(values: z.infer<typeof formSchema>) {
-        console.log(values)
+        setBudget(values);
     }
 
     return (

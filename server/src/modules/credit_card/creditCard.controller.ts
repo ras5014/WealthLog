@@ -58,7 +58,12 @@ export const setBudget = async (req: Request, res: Response) => {
     if (typeof amount !== "number") {
       return res.status(400).json({ error: "Invalid amount" });
     }
-    await db.insert(creditCardBudget).values({ amount: amount.toString() });
+    const existingBudget = await db.select().from(creditCardBudget).limit(1);
+    if (existingBudget.length > 0) {
+      await db.update(creditCardBudget).set({ amount: amount.toString() });
+    } else {
+      await db.insert(creditCardBudget).values({ amount: amount.toString() });
+    }
     res.status(200).json({ message: "Budget set successfully" });
   } catch (error) {
     console.error(error);
