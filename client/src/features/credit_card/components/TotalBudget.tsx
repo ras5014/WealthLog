@@ -20,22 +20,23 @@ export default function TotalBudget({ totalSpends }: { totalSpends: number }) {
     const remainingAmount = Math.max(budgetAmount - totalSpends, 0);
     const overBudgetAmount = Math.max(totalSpends - budgetAmount, 0);
 
-    const status = !hasBudget
-        ? "unconfigured"
-        : totalSpends > budgetAmount
-            ? "exceeded"
-            : progress >= 0.8
-                ? "warning"
-                : "healthy";
+    const getStatus = (): "unconfigured" | "exceeded" | "warning" | "healthy" => {
+        if (!hasBudget) return "unconfigured";
+        if (totalSpends > budgetAmount) return "exceeded";
+        if (progress >= 0.8) return "warning";
+        return "healthy";
+    };
 
-    const chartColor =
-        status === "exceeded"
-            ? "var(--destructive)"
-            : status === "warning"
-                ? "var(--chart-5)"
-                : status === "healthy"
-                    ? "var(--chart-2)"
-                    : "var(--muted-foreground)";
+    const status = getStatus();
+
+    const getChartColor = (): string => {
+        if (status === "exceeded") return "var(--destructive)";
+        if (status === "warning") return "var(--chart-5)";
+        if (status === "healthy") return "var(--chart-2)";
+        return "var(--muted-foreground)";
+    };
+
+    const chartColor = getChartColor();
 
     const chartConfig = {
         spent: {
@@ -52,11 +53,17 @@ export default function TotalBudget({ totalSpends }: { totalSpends: number }) {
         },
     ]
 
-    const headline = !hasBudget
-        ? "Set your monthly budget to start tracking utilization"
-        : overBudgetAmount > 0
-            ? `${formatCurrency(overBudgetAmount)} over budget`
-            : `${formatCurrency(remainingAmount)} left for this cycle`
+    const getHeadline = (): string => {
+        if (!hasBudget) {
+            return "Set your monthly budget to start tracking utilization";
+        }
+        if (overBudgetAmount > 0) {
+            return `${formatCurrency(overBudgetAmount)} over budget`;
+        }
+        return `${formatCurrency(remainingAmount)} left for this cycle`;
+    };
+
+    const headline = getHeadline();
 
     const description = !hasBudget
         ? "Budget target not set yet"
@@ -64,7 +71,7 @@ export default function TotalBudget({ totalSpends }: { totalSpends: number }) {
 
     return (
         <Card className="overflow-hidden border-border/60 bg-linear-to-br from-card via-card to-muted/15">
-            <CardHeader className="border-b border-border/60 bg-muted/10">
+            <CardHeader className="border-b border-border/60 bg-muted/10 h-20">
                 <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
@@ -90,7 +97,7 @@ export default function TotalBudget({ totalSpends }: { totalSpends: number }) {
                     </span>
                 </div>
             </CardHeader>
-            <CardContent className="space-y-4 pt-5">
+            <CardContent className="space-y-3">
                 <ChartContainer
                     config={chartConfig}
                     className="mx-auto h-[190px] w-[190px]"

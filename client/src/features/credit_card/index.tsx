@@ -1,10 +1,3 @@
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card"
 import TotalSpent from "./components/TotalSpent"
 import TotalBudget from "./components/TotalBudget"
 import CategorySpendChart from "./components/CategorySpendChart"
@@ -20,11 +13,14 @@ export default function Index() {
     const burnRatePerDay = totalDayPassedInCurrentCycle > 0 ? totalSpends / totalDayPassedInCurrentCycle : 0;
     // TODO: Get last month same time spend from backend/redis cache
     const lastMonthSameTimeSpend = 10000;
+    const lastMonthBill = 40000;
+    const dueDate = currentBillingCycle?.statementEndDate || "";
+    const lastMonthBillStatus = "pending" as const;
     return (
         <>
             {isPending && <p>Loading...</p>}
             {isError && <p>Error loading data</p>}
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <TotalBudget totalSpends={totalSpends} />
                 <TotalSpent
                     totalSpent={totalSpends}
@@ -32,8 +28,10 @@ export default function Index() {
                     lastMonthSameTimeSpend={lastMonthSameTimeSpend}
                     billingCycleStartDate={currentBillingCycle?.statementStartDate}
                     billingCycleEndDate={currentBillingCycle?.statementEndDate}
+                    lastMonthBill={lastMonthBill}
+                    dueDate={dueDate}
+                    lastMonthBillStatus={lastMonthBillStatus}
                 />
-                <CategorySpendChart />
                 <CategorySpendChart />
             </div>
         </>

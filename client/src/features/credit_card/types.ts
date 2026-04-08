@@ -23,6 +23,9 @@ export type TotalSpentProps = {
   lastMonthSameTimeSpend?: number;
   billingCycleStartDate?: string;
   billingCycleEndDate?: string;
+  lastMonthBill?: number;
+  dueDate?: string;
+  lastMonthBillStatus?: "paid" | "pending" | "overdue";
 };
 
 export const BudgetSchema = z.object({
