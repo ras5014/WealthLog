@@ -1,14 +1,17 @@
 import {
     ArrowDownRight,
     ArrowUpRight,
+    CalendarClock,
     CalendarRange,
     Flame,
+    ReceiptText,
     Wallet2
 } from "lucide-react"
 
 import {
     Card,
     CardContent,
+    CardDescription,
     CardHeader,
     CardTitle,
 } from "@/components/ui/card"
@@ -21,6 +24,8 @@ const defaultProps = {
     lastMonthSameTimeSpend: 0,
     billingCycleStartDate: "",
     billingCycleEndDate: "",
+    lastMonthBill: 0,
+    dueDate: "",
 }
 
 export default function TotalSpent(props: Readonly<TotalSpentProps>) {
@@ -30,6 +35,9 @@ export default function TotalSpent(props: Readonly<TotalSpentProps>) {
         lastMonthSameTimeSpend,
         billingCycleStartDate,
         billingCycleEndDate,
+        lastMonthBill,
+        dueDate,
+        lastMonthBillStatus,
     } = {
         ...defaultProps,
         ...props,
@@ -45,16 +53,37 @@ export default function TotalSpent(props: Readonly<TotalSpentProps>) {
             ? 0
             : (totalSpent - lastMonthSameTimeSpend) / lastMonthSameTimeSpend
 
+    const dueDateValue = dueDate ? new Date(dueDate) : null
+    const hasValidDueDate = !!dueDateValue && !Number.isNaN(dueDateValue.getTime())
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const derivedBillStatus = lastMonthBillStatus
+        ?? (hasValidDueDate && dueDateValue < today
+            ? "overdue"
+            : "pending")
+
+    const dueDateLabel = hasValidDueDate
+        ? new Intl.DateTimeFormat("en-IN", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+        }).format(dueDateValue)
+        : "Not available"
+
     const isUp = trend > 0
     const TrendIcon = isUp ? ArrowUpRight : ArrowDownRight
 
     return (
         <Card className="flex-1 overflow-hidden border-border/60 bg-linear-to-br from-card via-card to-muted/20">
-            <CardHeader className="gap-4 border-b border-border/60 bg-muted/10">
+            <CardHeader className="border-b border-border/60 bg-muted/10 h-20">
                 <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1 flex items-center gap-2">
-                        <Wallet2 className="size-6 text-muted-foreground" />
-                        <CardTitle className="text-base font-semibold">Total Spend</CardTitle>
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                            <Wallet2 className="size-6 text-muted-foreground" />
+                            <CardTitle className="text-base font-semibold">Total Bill Till Now</CardTitle>
+                        </div>
+                        <CardDescription>Total card spend recorded for this statement period</CardDescription>
                     </div>
 
                     {billingCyclePeriod && (
@@ -66,17 +95,73 @@ export default function TotalSpent(props: Readonly<TotalSpentProps>) {
                 </div>
             </CardHeader>
 
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-3">
                 <div className="space-y-1">
-                    <p className="text-4xl font-semibold tracking-tight text-foreground">
-                        {formatCurrency(totalSpent)}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                        Total card spend recorded for this statement period
-                    </p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="rounded-2xl border border-border/60 bg-background/60 p-3.5">
+                            <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                                Total Bill
+                            </p>
+                            <p className="mt-2 text-xl font-semibold text-foreground">
+                                {formatCurrency(totalSpent)}
+                            </p>
+                        </div>
+
+                        <div className="rounded-2xl border border-border/60 bg-background/60 p-3.5">
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                                        Last bill
+                                    </p>
+                                    <p className="mt-2 text-xl font-semibold text-foreground">
+                                        {formatCurrency(Number(lastMonthBill ?? 0))}
+                                    </p>
+                                </div>
+                                <span
+                                    className={cn(
+                                        "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold",
+                                        derivedBillStatus === "paid" && "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+                                        derivedBillStatus === "pending" && "bg-amber-500/10 text-amber-700 dark:text-amber-300",
+                                        derivedBillStatus === "overdue" && "bg-destructive/10 text-destructive",
+                                    )}
+                                >
+                                    {derivedBillStatus === "paid" && "Paid"}
+                                    {derivedBillStatus === "pending" && "Pending"}
+                                    {derivedBillStatus === "overdue" && "Overdue"}
+                                </span>
+                            </div>
+                            <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+                                <CalendarClock className="size-4" />
+                                <span>Due {dueDateLabel}</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
+
+
                 <div className="grid gap-3">
+                    <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-background/50 px-3 py-3 text-sm">
+                        <span className="inline-flex items-center gap-2 text-muted-foreground">
+                            <span className="flex size-8 items-center justify-center rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-300">
+                                <ReceiptText className="size-4" />
+                            </span>
+                            <span>Bill status</span>
+                        </span>
+                        <span
+                            className={cn(
+                                "inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-semibold",
+                                derivedBillStatus === "paid" && "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+                                derivedBillStatus === "pending" && "bg-amber-500/10 text-amber-700 dark:text-amber-300",
+                                derivedBillStatus === "overdue" && "bg-destructive/10 text-destructive",
+                            )}
+                        >
+                            {derivedBillStatus === "paid" && "Settled"}
+                            {derivedBillStatus === "pending" && "Awaiting payment"}
+                            {derivedBillStatus === "overdue" && "Payment overdue"}
+                        </span>
+                    </div>
+
                     <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-background/50 px-3 py-3 text-sm">
                         <span className="inline-flex items-center gap-2 text-muted-foreground">
                             <span className="flex size-8 items-center justify-center rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-300">
@@ -115,7 +200,17 @@ export default function TotalSpent(props: Readonly<TotalSpentProps>) {
                             {percentFormatter.format(Math.abs(trend))}
                         </span>
                     </div>
-                </div>
+                    <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-background/50 px-3 py-3 text-sm">
+                        <span className="inline-flex items-center gap-2 text-muted-foreground">
+                            <span className="flex size-8 items-center justify-center rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-300">
+                                <CalendarClock className="size-4" />
+                            </span>
+                            <span>Expected EMI</span>
+                        </span>
+                        <span className="font-semibold text-foreground">
+                            {formatCurrency(0)}/month
+                        </span>
+                    </div>                </div>
             </CardContent>
         </Card>
     )
