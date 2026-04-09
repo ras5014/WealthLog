@@ -3,7 +3,7 @@ import type {
   ParsedStatementResult,
 } from "./creditCard.types.ts";
 import db from "../../db/connection.ts";
-import { creditCardTransactions } from "../../db/schema.ts";
+import { creditCardInfo, creditCardTransactions } from "../../db/schema.ts";
 import { and, eq, inArray } from "drizzle-orm";
 import { PREFIXES_TO_EXCLUDE, CARD_DETAILS } from "../../config/constants.ts";
 
@@ -140,6 +140,11 @@ export const extractTransactionsFromPDF = async (
       })),
     );
   }
+
+  // TODO: Add totalAmountDue to DB, Later update for each bank as a json
+  await db
+    .update(creditCardInfo)
+    .set({ totalAmountDue: totalAmountDue.toString() });
 
   return {
     cardHolderName,

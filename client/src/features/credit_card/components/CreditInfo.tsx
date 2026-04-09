@@ -36,7 +36,6 @@ export default function CreditInfo(props: Readonly<TotalSpentProps>) {
         lastMonthSameTimeSpend,
         billingCycleStartDate,
         billingCycleEndDate,
-        lastMonthBill,
         dueDate,
     } = {
         ...defaultProps,
@@ -59,8 +58,8 @@ export default function CreditInfo(props: Readonly<TotalSpentProps>) {
     today.setHours(0, 0, 0, 0)
 
     const { data: creditInfo } = useGetCreditInfo();
-    const lastMonthBillStatus = creditInfo?.totalAmountDue;
-    const derivedBillStatus = lastMonthBillStatus <= 0 ? "paid" : "pending";
+    const lastMonthBill = creditInfo?.totalAmountDue;
+    const derivedBillStatus = lastMonthBill <= 0 ? "paid" : "pending";
 
     const dueDateLabel = hasValidDueDate
         ? new Intl.DateTimeFormat("en-IN", {
@@ -99,7 +98,7 @@ export default function CreditInfo(props: Readonly<TotalSpentProps>) {
                     <div className="grid gap-3 sm:grid-cols-2">
                         <div className="rounded-2xl border border-border/60 bg-background/60 p-3.5">
                             <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                                Total Bill
+                                Bill so far
                             </p>
                             <p className="mt-2 text-xl font-semibold text-foreground">
                                 {formatCurrency(totalSpent)}
@@ -110,7 +109,7 @@ export default function CreditInfo(props: Readonly<TotalSpentProps>) {
                             <div className="flex items-start justify-between gap-3">
                                 <div>
                                     <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                                        Last bill
+                                        Bill Due
                                     </p>
                                     <p className="mt-2 text-xl font-semibold text-foreground">
                                         {formatCurrency(Number(lastMonthBill ?? 0))}

@@ -13,7 +13,6 @@ export default function Index() {
     const burnRatePerDay = totalDayPassedInCurrentCycle > 0 ? totalSpends / totalDayPassedInCurrentCycle : 0;
     // TODO: Get last month same time spend from backend/redis cache
     const lastMonthSameTimeSpend = 10000;
-    const lastMonthBill = 40000;
     const dueDate = currentBillingCycle?.statementEndDate || "";
     return (
         <>
@@ -27,7 +26,6 @@ export default function Index() {
                     lastMonthSameTimeSpend={lastMonthSameTimeSpend}
                     billingCycleStartDate={currentBillingCycle?.statementStartDate}
                     billingCycleEndDate={currentBillingCycle?.statementEndDate}
-                    lastMonthBill={lastMonthBill}
                     dueDate={dueDate}
                 />
                 <CategorySpendChart />

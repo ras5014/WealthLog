@@ -10,7 +10,11 @@ import {
 const router = Router();
 const upload = multer({ dest: "uploads" });
 
-router.post("/synchronize", upload.single("file"), process_ICICIStatement);
+router.post(
+  "/synchronize-icici",
+  upload.single("file"),
+  process_ICICIStatement,
+);
 router.get("/get-transactions", getTransactions);
 router.get("/credit-info", getCreditInfo).post("/credit-info", setCreditInfo);
 
