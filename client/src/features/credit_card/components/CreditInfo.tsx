@@ -4,7 +4,7 @@ import {
     CalendarClock,
     CalendarRange,
     Flame,
-    ReceiptText,
+    Percent,
     Wallet2
 } from "lucide-react"
 
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/card"
 import { cn, formatBillingCyclePeriod, formatCurrency, percentFormatter } from "@/lib/utils"
 import type { TotalSpentProps } from "../types"
+import { useGetCreditInfo } from "../hooks/useCreditInfo"
 
 const defaultProps = {
     totalSpent: 0,
@@ -28,7 +29,7 @@ const defaultProps = {
     dueDate: "",
 }
 
-export default function TotalSpent(props: Readonly<TotalSpentProps>) {
+export default function CreditInfo(props: Readonly<TotalSpentProps>) {
     const {
         totalSpent,
         burnRatePerDay,
@@ -37,7 +38,6 @@ export default function TotalSpent(props: Readonly<TotalSpentProps>) {
         billingCycleEndDate,
         lastMonthBill,
         dueDate,
-        lastMonthBillStatus,
     } = {
         ...defaultProps,
         ...props,
@@ -58,10 +58,9 @@ export default function TotalSpent(props: Readonly<TotalSpentProps>) {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    const derivedBillStatus = lastMonthBillStatus
-        ?? (hasValidDueDate && dueDateValue < today
-            ? "overdue"
-            : "pending")
+    const { data: creditInfo } = useGetCreditInfo();
+    const lastMonthBillStatus = creditInfo?.totalAmountDue;
+    const derivedBillStatus = lastMonthBillStatus <= 0 ? "paid" : "pending";
 
     const dueDateLabel = hasValidDueDate
         ? new Intl.DateTimeFormat("en-IN", {
@@ -122,12 +121,10 @@ export default function TotalSpent(props: Readonly<TotalSpentProps>) {
                                         "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold",
                                         derivedBillStatus === "paid" && "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
                                         derivedBillStatus === "pending" && "bg-amber-500/10 text-amber-700 dark:text-amber-300",
-                                        derivedBillStatus === "overdue" && "bg-destructive/10 text-destructive",
                                     )}
                                 >
                                     {derivedBillStatus === "paid" && "Paid"}
                                     {derivedBillStatus === "pending" && "Pending"}
-                                    {derivedBillStatus === "overdue" && "Overdue"}
                                 </span>
                             </div>
                             <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
@@ -138,30 +135,7 @@ export default function TotalSpent(props: Readonly<TotalSpentProps>) {
                     </div>
                 </div>
 
-
-
                 <div className="grid gap-3">
-                    <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-background/50 px-3 py-3 text-sm">
-                        <span className="inline-flex items-center gap-2 text-muted-foreground">
-                            <span className="flex size-8 items-center justify-center rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-300">
-                                <ReceiptText className="size-4" />
-                            </span>
-                            <span>Bill status</span>
-                        </span>
-                        <span
-                            className={cn(
-                                "inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-semibold",
-                                derivedBillStatus === "paid" && "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-                                derivedBillStatus === "pending" && "bg-amber-500/10 text-amber-700 dark:text-amber-300",
-                                derivedBillStatus === "overdue" && "bg-destructive/10 text-destructive",
-                            )}
-                        >
-                            {derivedBillStatus === "paid" && "Settled"}
-                            {derivedBillStatus === "pending" && "Awaiting payment"}
-                            {derivedBillStatus === "overdue" && "Payment overdue"}
-                        </span>
-                    </div>
-
                     <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-background/50 px-3 py-3 text-sm">
                         <span className="inline-flex items-center gap-2 text-muted-foreground">
                             <span className="flex size-8 items-center justify-center rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-300">
@@ -210,7 +184,19 @@ export default function TotalSpent(props: Readonly<TotalSpentProps>) {
                         <span className="font-semibold text-foreground">
                             {formatCurrency(0)}/month
                         </span>
-                    </div>                </div>
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-background/50 px-3 py-3 text-sm">
+                        <span className="inline-flex items-center gap-2 text-muted-foreground">
+                            <span className="flex size-8 items-center justify-center rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-300">
+                                <Percent className="size-4" />
+                            </span>
+                            <span>Credit utilization</span>
+                        </span>
+                        <span className="font-semibold text-foreground">
+                            {formatCurrency(50000)}/{formatCurrency(200000)} (25%)                        </span>
+                    </div>
+                </div>
             </CardContent>
         </Card>
     )

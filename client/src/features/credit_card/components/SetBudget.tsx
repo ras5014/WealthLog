@@ -14,30 +14,30 @@ import z from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { Input } from "@/components/ui/input"
-import { BudgetSchema } from "../types"
-import { useGetBudget, useSetBudget } from "../hooks/useBudget"
+import { CreditInfoSchema } from "../types"
+import { useGetCreditInfo, useSetCreditInfo } from "../hooks/useCreditInfo"
 import { useEffect } from "react"
 
-const formSchema = BudgetSchema
+const formSchema = CreditInfoSchema
 
 export default function SetBudget() {
-    const { data: budgetData } = useGetBudget();
+    const { data: creditCardInfo } = useGetCreditInfo();
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            amount: budgetData?.amount || 0,
+            amount: creditCardInfo?.budget || 0,
         },
     })
 
     useEffect(() => {
-        if (budgetData?.amount !== undefined) {
-            form.reset({ amount: budgetData.amount });
+        if (creditCardInfo?.budget !== undefined) {
+            form.reset({ amount: creditCardInfo.budget });
         }
-    }, [budgetData, form]);
+    }, [creditCardInfo, form]);
 
-    const { mutateAsync: setBudget } = useSetBudget();
+    const { mutateAsync: setCreditInfo } = useSetCreditInfo();
     function onSubmit(values: z.infer<typeof formSchema>) {
-        setBudget(values);
+        setCreditInfo(values);
     }
 
     return (

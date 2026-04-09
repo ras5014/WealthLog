@@ -28,8 +28,8 @@ export type TotalSpentProps = {
   lastMonthBillStatus?: "paid" | "pending" | "overdue";
 };
 
-export const BudgetSchema = z.object({
+export const CreditInfoSchema = z.object({
   amount: z.number().min(0, "Amount must be a positive number"),
 });
 
-export type BudgetType = z.infer<typeof BudgetSchema>;
+export type CreditInfoType = z.infer<typeof CreditInfoSchema>;

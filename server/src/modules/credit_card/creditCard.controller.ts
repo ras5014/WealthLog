@@ -6,7 +6,7 @@ import {
   getAllLatestTransactions,
 } from "./creditCard.service.ts";
 import db from "../../db/connection.ts";
-import { creditCardBudget } from "../../db/schema.ts";
+import { creditCardInfo } from "../../db/schema.ts";
 
 export const process_ICICIStatement = async (req: Request, res: Response) => {
   // Check if a file was uploaded
@@ -42,27 +42,38 @@ export const getTransactions = async (req: Request, res: Response) => {
   }
 };
 
-export const getBudget = async (req: Request, res: Response) => {
+export const getCreditInfo = async (req: Request, res: Response) => {
   try {
-    const result = await db.select().from(creditCardBudget).limit(1);
-    res.status(200).json(result[0] || { amount: 0 });
+    const result = await db
+      .select({
+        budget: creditCardInfo.budget,
+        totalAmountDue: creditCardInfo.totalAmountDue,
+      })
+      .from(creditCardInfo)
+      .limit(1);
+    res.status(200).json(result[0] || { budget: 0, totalAmountDue: 0 });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Failed to fetch budget" });
+    res.status(500).json({ error: "Failed to fetch credit info" });
   }
 };
 
-export const setBudget = async (req: Request, res: Response) => {
+export const setCreditInfo = async (req: Request, res: Response) => {
   try {
-    const { amount } = req.body;
-    if (typeof amount !== "number") {
-      return res.status(400).json({ error: "Invalid amount" });
-    }
-    const existingBudget = await db.select().from(creditCardBudget).limit(1);
-    if (existingBudget.length > 0) {
-      await db.update(creditCardBudget).set({ amount: amount.toString() });
+    const existingBudget = await db.select().from(creditCardInfo).limit(1);
+    if (existingBudget.length > 0 && req.body.amount) {
+      await db.update(creditCardInfo).set({
+        budget: req?.body?.amount?.toString(),
+      });
+    } else if (existingBudget.length > 0 && req.body.totalAmountDue) {
+      await db.update(creditCardInfo).set({
+        totalAmountDue: req?.body?.totalAmountDue?.toString(),
+      });
     } else {
-      await db.insert(creditCardBudget).values({ amount: amount.toString() });
+      await db.insert(creditCardInfo).values({
+        budget: req?.body?.amount?.toString() ?? "0",
+        totalAmountDue: req?.body?.totalAmountDue?.toString() ?? "0",
+      });
     }
     res.status(200).json({ message: "Budget set successfully" });
   } catch (error) {

@@ -9,11 +9,11 @@ import { ChartContainer, type ChartConfig } from "@/components/ui/chart"
 import { cn, formatCurrency } from "@/lib/utils"
 import { PiggyBank, TrendingUp, TriangleAlert } from "lucide-react"
 import { Label, PolarGrid, PolarRadiusAxis, RadialBar, RadialBarChart } from "recharts"
-import { useGetBudget } from "../hooks/useBudget";
+import { useGetCreditInfo } from "../hooks/useCreditInfo";
 
 export default function TotalBudget({ totalSpends }: { totalSpends: number }) {
-    const { data: budgetData } = useGetBudget();
-    const budgetAmount = Number(budgetData?.amount ?? 0);
+    const { data: creditCardInfo } = useGetCreditInfo();
+    const budgetAmount = Number(creditCardInfo?.budget ?? 0);
     const hasBudget = budgetAmount > 0;
     const progress = hasBudget ? Math.min(totalSpends / budgetAmount, 1) : 0;
     const progressPercent = Math.round(progress * 100);

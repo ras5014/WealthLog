@@ -1,7 +1,7 @@
-import TotalSpent from "./components/TotalSpent"
 import TotalBudget from "./components/TotalBudget"
 import CategorySpendChart from "./components/CategorySpendChart"
 import { useTransactions } from "./hooks/useTransactions";
+import CreditInfo from "./components/CreditInfo";
 
 export default function Index() {
     const { data, isPending, isError } = useTransactions();
@@ -15,14 +15,13 @@ export default function Index() {
     const lastMonthSameTimeSpend = 10000;
     const lastMonthBill = 40000;
     const dueDate = currentBillingCycle?.statementEndDate || "";
-    const lastMonthBillStatus = "pending" as const;
     return (
         <>
             {isPending && <p>Loading...</p>}
             {isError && <p>Error loading data</p>}
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-1 xl:grid-cols-3">
                 <TotalBudget totalSpends={totalSpends} />
-                <TotalSpent
+                <CreditInfo
                     totalSpent={totalSpends}
                     burnRatePerDay={burnRatePerDay}
                     lastMonthSameTimeSpend={lastMonthSameTimeSpend}
@@ -30,7 +29,6 @@ export default function Index() {
                     billingCycleEndDate={currentBillingCycle?.statementEndDate}
                     lastMonthBill={lastMonthBill}
                     dueDate={dueDate}
-                    lastMonthBillStatus={lastMonthBillStatus}
                 />
                 <CategorySpendChart />
             </div>

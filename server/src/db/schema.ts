@@ -30,7 +30,11 @@ export const creditCardTransactions = pgTable(
   ],
 );
 
-export const creditCardBudget = pgTable("credit_card_budget", {
+export const creditCardInfo = pgTable("credit_card_info", {
   id: serial("id").primaryKey(),
-  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+  totalAmountDue: numeric("total_amount_due", {
+    precision: 12,
+    scale: 2,
+  }).notNull(),
+  budget: numeric("budget", { precision: 12, scale: 2 }).notNull(),
 });
