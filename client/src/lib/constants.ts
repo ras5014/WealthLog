@@ -1,5 +1,5 @@
 export const BANK_OPTIONS = [
-  "All Banks",
+  "ALL BANKS",
   "ICICI CORAL",
   "ICICI AMZNPAY",
 ] as const;
