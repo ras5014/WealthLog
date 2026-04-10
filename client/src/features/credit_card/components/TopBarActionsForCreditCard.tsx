@@ -36,8 +36,8 @@ export default function TopBarActionsForCreditCard() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
                     {BANK_OPTIONS.map((bankOption) => (
-                        <DropdownMenuItem key={bankOption} onClick={() => { dispatch(setBank(bankOption)); }}>
-                            {bank}
+                        <DropdownMenuItem key={bankOption} onClick={() => dispatch(setBank(bankOption))}>
+                            {bankOption}
                         </DropdownMenuItem>
                     ))}
                 </DropdownMenuContent>
