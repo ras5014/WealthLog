@@ -29,3 +29,12 @@ export const creditCardTransactions = pgTable(
     ),
   ],
 );
+
+export const creditCardInfo = pgTable("credit_card_info", {
+  id: serial("id").primaryKey(),
+  totalAmountDue: numeric("total_amount_due", {
+    precision: 12,
+    scale: 2,
+  }).notNull(),
+  budget: numeric("budget", { precision: 12, scale: 2 }).notNull(),
+});

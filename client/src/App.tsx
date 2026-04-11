@@ -1,10 +1,16 @@
 import { createBrowserRouter } from "react-router";
 import { RouterProvider } from "react-router/dom";
 import MainLayout from "./layouts/MainLayout";
+import CreditCardPage from "./features/credit_card";
+import { Toaster } from 'react-hot-toast'
 
 function PagePlaceholder({ title }: { title: string }) {
     return <div>{title}</div>;
 }
+
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+const queryClient = new QueryClient()
 
 const router = createBrowserRouter([
     {
@@ -22,7 +28,7 @@ const router = createBrowserRouter([
             },
             {
                 path: "credit-card",
-                Component: () => <PagePlaceholder title="Credit Cards" />,
+                Component: CreditCardPage,
             },
             {
                 path: "emis",
@@ -41,5 +47,14 @@ const router = createBrowserRouter([
 ]);
 
 export const App = () => {
-    return <RouterProvider router={router} />;
+    return (
+        <>
+            <Toaster />
+            <QueryClientProvider client={queryClient}>
+                <RouterProvider router={router} />
+                <ReactQueryDevtools initialIsOpen={false} />
+            </QueryClientProvider>
+        </>
+
+    );
 };

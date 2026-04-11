@@ -3,7 +3,7 @@ import type {
   ParsedStatementResult,
 } from "./creditCard.types.ts";
 import db from "../../db/connection.ts";
-import { creditCardTransactions } from "../../db/schema.ts";
+import { creditCardInfo, creditCardTransactions } from "../../db/schema.ts";
 import { and, eq, inArray } from "drizzle-orm";
 import { PREFIXES_TO_EXCLUDE, CARD_DETAILS } from "../../config/constants.ts";
 
@@ -141,6 +141,11 @@ export const extractTransactionsFromPDF = async (
     );
   }
 
+  // TODO: Add totalAmountDue to DB, Later update for each bank as a json
+  await db
+    .update(creditCardInfo)
+    .set({ totalAmountDue: totalAmountDue.toString() });
+
   return {
     cardHolderName,
     cardNumber,
@@ -152,4 +157,44 @@ export const extractTransactionsFromPDF = async (
     totalTransactionsParsed: allTransactions.length + emiExcludedCount,
     emiExcludedCount,
   };
+};
+
+export const getAllLatestTransactions = async () => {
+  const latestTransaction = await db.query.creditCardTransactions.findFirst({
+    columns: {
+      statementStartDate: true,
+      statementEndDate: true,
+    },
+    orderBy: (transactions, { desc }) => [desc(transactions.transactionDate)],
+  });
+
+  const transactions = await db.query.creditCardTransactions.findMany({
+    columns: {
+      id: true,
+      transactionDate: true,
+      details: true,
+      amount: true,
+      type: true,
+      referenceNumber: true,
+      statementStartDate: true,
+      statementEndDate: true,
+      bank: true,
+    },
+    where: (transactions, { eq }) =>
+      eq(
+        transactions.statementStartDate,
+        latestTransaction?.statementStartDate || "",
+      ),
+    orderBy: (transactions, { desc }) => [desc(transactions.transactionDate)],
+  });
+
+  const totalDayPassed = latestTransaction
+    ? Math.ceil(
+        (new Date(latestTransaction.statementEndDate).getTime() -
+          new Date(latestTransaction.statementStartDate).getTime()) /
+          (1000 * 60 * 60 * 24),
+      ) + 1
+    : 0;
+
+  return { transactions, totalDayPassed };
 };
