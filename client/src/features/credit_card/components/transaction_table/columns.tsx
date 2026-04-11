@@ -1,6 +1,18 @@
 import type { ColumnDef } from "@tanstack/react-table"
 import type { CreditCardTransaction } from "../../types"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 export type Payment = CreditCardTransaction
 
@@ -94,5 +106,45 @@ export const columns: ColumnDef<CreditCardTransaction>[] = [
                 {row.original.referenceNumber}
             </code>
         ),
+    },
+    {
+        id: "actions",
+        header: "Actions",
+        cell: ({ row }) => {
+            const transaction = row.original;
+            return (
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                            Add to EMI
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Add to EMI</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Are you sure you want to add this transaction to EMI?
+                                <br />
+                                <strong>{transaction.details}</strong> —{" "}
+                                {new Intl.NumberFormat("en-IN", {
+                                    style: "currency",
+                                    currency: "INR",
+                                }).format(Number(transaction.amount))}
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                                onClick={() => {
+                                    console.log("Adding to EMI:", transaction);
+                                }}
+                            >
+                                Confirm
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            );
+        },
     },
 ]

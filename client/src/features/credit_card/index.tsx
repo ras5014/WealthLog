@@ -56,7 +56,7 @@ export default function Index() {
                 <CategorySpendChart />
             </div>
 
-            <div className="mt-4">
+            <div className="mt-6">
                 <DataTable columns={columns} data={filteredTransactions} />
             </div>
         </>

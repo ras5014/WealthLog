@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
 import { CREDIT_CARD_TRANSACTIONS_PER_PAGE } from "@/lib/constants"
+import { Receipt } from "lucide-react"
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[]
@@ -49,25 +50,28 @@ export function DataTable<TData, TValue>({
         data.length === 0
             ? 0
             : table.getState().pagination.pageIndex *
-              table.getState().pagination.pageSize +
-              1
+            table.getState().pagination.pageSize +
+            1
     const endRow =
         data.length === 0
             ? 0
             : Math.min(
-                  (table.getState().pagination.pageIndex + 1) *
-                      table.getState().pagination.pageSize,
-                  data.length,
-              )
+                (table.getState().pagination.pageIndex + 1) *
+                table.getState().pagination.pageSize,
+                data.length,
+            )
 
     return (
         <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
             <div className="flex items-center justify-between border-b border-border/60 bg-gradient-to-r from-emerald-500/5 via-transparent to-rose-500/5 px-4 py-3">
                 <div>
-                    <p className="text-sm font-semibold text-foreground">Recent transactions</p>
-                    <p className="text-xs text-muted-foreground">
-                        Showing {startRow}-{endRow} of {data.length} {data.length === 1 ? "entry" : "entries"}
+                    <p className="text-lg font-semibold text-foreground flex items-center gap-2">
+                        <Receipt className="h-5 w-5" /> Recent transactions
+                        <p className="text-xs text-muted-foreground">
+                            Showing {startRow}-{endRow} of {data.length} {data.length === 1 ? "entry" : "entries"}
+                        </p>
                     </p>
+
                 </div>
             </div>
 
