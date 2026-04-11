@@ -65,7 +65,7 @@ export const columns: ColumnDef<CreditCardTransaction>[] = [
         cell: ({ row }) => {
             const isDebit = row.original.type === "Dr";
             return (
-                <div className="min-w-32 text-right">
+                <div className="min-w-32">
                     <p
                         className={cn(
                             "font-semibold tabular-nums",
@@ -81,20 +81,22 @@ export const columns: ColumnDef<CreditCardTransaction>[] = [
     },
     {
         accessorKey: "type",
-        header: "Type",
+        header: () => <div className="text-center">Type</div>,
         cell: ({ row }) => {
             const isDebit = row.original.type === "Dr";
             return (
-                <span
-                    className={cn(
-                        "inline-flex min-w-16 items-center justify-center rounded-full px-2.5 py-1 text-xs font-semibold tracking-wide",
-                        isDebit
-                            ? "bg-rose-500/10 text-rose-700 ring-1 ring-rose-500/20"
-                            : "bg-emerald-500/10 text-emerald-700 ring-1 ring-emerald-500/20",
-                    )}
-                >
-                    {isDebit ? "Debit" : "Credit"}
-                </span>
+                <div className="flex w-full justify-center">
+                    <span
+                        className={cn(
+                            "inline-flex min-w-16 items-center justify-center rounded-full px-2.5 py-1 text-xs font-semibold tracking-wide",
+                            isDebit
+                                ? "bg-rose-500/10 text-rose-700 ring-1 ring-rose-500/20"
+                                : "bg-emerald-500/10 text-emerald-700 ring-1 ring-emerald-500/20",
+                        )}
+                    >
+                        {isDebit ? "Debit" : "Credit"}
+                    </span>
+                </div>
             )
         },
     },
@@ -109,41 +111,43 @@ export const columns: ColumnDef<CreditCardTransaction>[] = [
     },
     {
         id: "actions",
-        header: "Actions",
+        header: () => <div className="text-center">Actions</div>,
         cell: ({ row }) => {
             const transaction = row.original;
             return (
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="outline" size="sm">
-                            Add to EMI
-                        </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Add to EMI</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Are you sure you want to add this transaction to EMI?
-                                <br />
-                                <strong>{transaction.details}</strong> —{" "}
-                                {new Intl.NumberFormat("en-IN", {
-                                    style: "currency",
-                                    currency: "INR",
-                                }).format(Number(transaction.amount))}
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                                onClick={() => {
-                                    console.log("Adding to EMI:", transaction);
-                                }}
-                            >
-                                Confirm
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
+                <div className="flex w-full justify-center">
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="sm">
+                                Add to EMI
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Add to EMI</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Are you sure you want to add this transaction to EMI?
+                                    <br />
+                                    <strong>{transaction.details}</strong> -{" "}
+                                    {new Intl.NumberFormat("en-IN", {
+                                        style: "currency",
+                                        currency: "INR",
+                                    }).format(Number(transaction.amount))}
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                    onClick={() => {
+                                        console.log("Adding to EMI:", transaction);
+                                    }}
+                                >
+                                    Confirm
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
             );
         },
     },
