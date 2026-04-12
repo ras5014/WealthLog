@@ -146,16 +146,13 @@ export const extractTransactionsFromPDF = async (
     );
   }
 
-  // TODO: Add totalAmountDue to DB, Later update for each bank as a json
-  await db
-    .update(creditCardInfo)
-    .set({ totalAmountDue: totalAmountDue.toString() });
-
-  // Calculate billing cycle end date based on statement start date and update in DB
   const billingEndDateStr = calculateBillingCycleDates(statementStartDate);
   await db.update(creditCardInfo).set({
-    billingCycleStartDate: statementStartDate.split("-").reverse().join("-"),
-    billingCycleEndDate: billingEndDateStr,
+    bankBillingDetails: {
+      totalAmountDue,
+      billingCycleStartDate: statementStartDate.split("-").reverse().join("-"),
+      billingCycleEndDate: billingEndDateStr,
+    },
   });
 
   return {

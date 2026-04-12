@@ -49,11 +49,15 @@ export const getCreditInfo = async (req: Request, res: Response) => {
     const result = await db
       .select({
         budget: creditCardInfo.budget,
-        totalAmountDue: creditCardInfo.totalAmountDue,
+        bankBillingDetails: creditCardInfo.bankBillingDetails,
       })
       .from(creditCardInfo)
       .limit(1);
-    res.status(200).json(result[0] || { budget: 0, totalAmountDue: 0 });
+    const row = result[0];
+    res.status(200).json({
+      budget: row?.budget ?? 0,
+      totalAmountDue: row?.bankBillingDetails?.totalAmountDue ?? 0,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to fetch credit info" });
@@ -68,13 +72,20 @@ export const setCreditInfo = async (req: Request, res: Response) => {
         budget: req?.body?.amount?.toString(),
       });
     } else if (existingBudget.length > 0 && req.body.totalAmountDue) {
+      const existing = existingBudget[0];
       await db.update(creditCardInfo).set({
-        totalAmountDue: req?.body?.totalAmountDue?.toString(),
+        bankBillingDetails: {
+          billingCycleStartDate: existing.bankBillingDetails?.billingCycleStartDate ?? "",
+          billingCycleEndDate: existing.bankBillingDetails?.billingCycleEndDate ?? "",
+          totalAmountDue: Number(req.body.totalAmountDue),
+        },
       });
     } else {
       await db.insert(creditCardInfo).values({
         budget: req?.body?.amount?.toString() ?? "0",
-        totalAmountDue: req?.body?.totalAmountDue?.toString() ?? "0",
+        bankBillingDetails: req?.body?.totalAmountDue
+          ? { totalAmountDue: Number(req.body.totalAmountDue), billingCycleStartDate: "", billingCycleEndDate: "" }
+          : undefined,
       });
     }
     res.status(200).json({ message: "Budget set successfully" });
