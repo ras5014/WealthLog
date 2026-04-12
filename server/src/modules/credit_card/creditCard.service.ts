@@ -6,6 +6,7 @@ import db from "../../db/connection.ts";
 import { creditCardInfo, creditCardTransactions } from "../../db/schema.ts";
 import { and, eq, inArray } from "drizzle-orm";
 import { PREFIXES_TO_EXCLUDE, CARD_DETAILS } from "../../config/constants.ts";
+import { calculateBillingCycleDates } from "../../lib/utils.ts";
 
 export const extractTransactionsFromPDF = async (
   pdfText: string,
@@ -146,6 +147,13 @@ export const extractTransactionsFromPDF = async (
     .update(creditCardInfo)
     .set({ totalAmountDue: totalAmountDue.toString() });
 
+  // Calculate billing cycle end date based on statement start date and update in DB
+  const billingEndDateStr = calculateBillingCycleDates(statementStartDate);
+  await db.update(creditCardInfo).set({
+    billingCycleStartDate: statementStartDate.split("-").reverse().join("-"),
+    billingCycleEndDate: billingEndDateStr,
+  });
+
   return {
     cardHolderName,
     cardNumber,
@@ -197,4 +205,8 @@ export const getAllLatestTransactions = async () => {
     : 0;
 
   return { transactions, totalDayPassed };
+};
+
+export const extractEmisFromPDF = async (pdfText: string) => {
+  return pdfText;
 };
