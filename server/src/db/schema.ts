@@ -33,11 +33,12 @@ export const creditCardTransactions = pgTable(
 
 export const creditCardInfo = pgTable("credit_card_info", {
   id: serial("id").primaryKey(),
+  budget: numeric("budget", { precision: 12, scale: 2 }).notNull(),
+
   totalAmountDue: numeric("total_amount_due", {
     precision: 12,
     scale: 2,
   }).notNull(),
-  budget: numeric("budget", { precision: 12, scale: 2 }).notNull(),
   billingCycleStartDate: date("billing_cycle_start_date"),
   billingCycleEndDate: date("billing_cycle_end_date"),
 });
@@ -45,9 +46,9 @@ export const creditCardInfo = pgTable("credit_card_info", {
 export const emiInfo = pgTable("emi_info", {
   id: serial("id").primaryKey(),
   bank: varchar("bank", { length: 64 }),
+  description: varchar("description", { length: 512 }),
   merchant: varchar("merchant", { length: 128 }),
   totalAmount: numeric("total_amount", { precision: 12, scale: 2 }),
-  // amortizationSchedule: jsonb("amortization_schedule"),
   amortizationSchedule: jsonb("amortization_schedule").$type<
     {
       emiNo: number;
