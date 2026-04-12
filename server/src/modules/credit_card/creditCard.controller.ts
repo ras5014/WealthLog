@@ -7,7 +7,11 @@ import {
   getAllLatestTransactions,
 } from "./creditCard.service.ts";
 import db from "../../db/connection.ts";
-import { creditCardInfo, creditCardTransactions } from "../../db/schema.ts";
+import {
+  creditCardInfo,
+  creditCardTransactions,
+  emiInfo,
+} from "../../db/schema.ts";
 import { eq } from "drizzle-orm";
 
 export const process_ICICIStatement = async (req: Request, res: Response) => {
@@ -57,6 +61,9 @@ export const getCreditInfo = async (req: Request, res: Response) => {
     res.status(200).json({
       budget: row?.budget ?? 0,
       totalAmountDue: row?.bankBillingDetails?.totalAmountDue ?? 0,
+      billingCycleStartDate:
+        row?.bankBillingDetails?.billingCycleStartDate ?? "",
+      billingCycleEndDate: row?.bankBillingDetails?.billingCycleEndDate ?? "",
     });
   } catch (error) {
     console.error(error);
@@ -71,21 +78,9 @@ export const setCreditInfo = async (req: Request, res: Response) => {
       await db.update(creditCardInfo).set({
         budget: req?.body?.amount?.toString(),
       });
-    } else if (existingBudget.length > 0 && req.body.totalAmountDue) {
-      const existing = existingBudget[0];
-      await db.update(creditCardInfo).set({
-        bankBillingDetails: {
-          billingCycleStartDate: existing.bankBillingDetails?.billingCycleStartDate ?? "",
-          billingCycleEndDate: existing.bankBillingDetails?.billingCycleEndDate ?? "",
-          totalAmountDue: Number(req.body.totalAmountDue),
-        },
-      });
     } else {
       await db.insert(creditCardInfo).values({
         budget: req?.body?.amount?.toString() ?? "0",
-        bankBillingDetails: req?.body?.totalAmountDue
-          ? { totalAmountDue: Number(req.body.totalAmountDue), billingCycleStartDate: "", billingCycleEndDate: "" }
-          : undefined,
       });
     }
     res.status(200).json({ message: "Budget set successfully" });
@@ -134,5 +129,15 @@ export const synchronizeEMI_ICICI = async (req: Request, res: Response) => {
   } finally {
     await parser.destroy();
     await unlink(filePath).catch(() => undefined);
+  }
+};
+
+export const getEmiInfo = async (req: Request, res: Response) => {
+  try {
+    const result = await db.select().from(emiInfo);
+    res.status(200).json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch EMI info" });
   }
 };

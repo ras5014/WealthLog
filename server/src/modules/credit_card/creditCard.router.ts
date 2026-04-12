@@ -7,6 +7,7 @@ import {
   setCreditInfo,
   addToEMI,
   synchronizeEMI_ICICI,
+  getEmiInfo,
 } from "./creditCard.controller.ts";
 
 const router = Router();
@@ -26,6 +27,10 @@ router.post(
 
 router.get("/get-transactions", getTransactions);
 router.get("/credit-info", getCreditInfo).post("/credit-info", setCreditInfo);
+
+// TODO: Use with Transaction table "Add to EMI" button
 router.post("/add-to-emi", addToEMI);
+
+router.get("/get-emi-info", getEmiInfo);
 
 export default router;
