@@ -16,8 +16,11 @@ import {
     CardTitle,
 } from "@/components/ui/card"
 import { cn, formatBillingCyclePeriod, formatCurrency, percentFormatter } from "@/lib/utils"
-import type { TotalSpentProps } from "../types"
-import { useGetCreditInfo } from "../hooks/useCreditInfo"
+import type { BankDetailSchema, TotalSpentProps } from "../types"
+import { useBankDetails } from "../hooks/useBankDetails"
+import { useSelector } from "react-redux"
+import type { RootState } from "@/lib/store"
+import { BANK_OPTIONS } from "@/lib/constants"
 
 const defaultProps = {
     totalSpent: 0,
@@ -54,11 +57,17 @@ export default function CreditInfo(props: Readonly<TotalSpentProps>) {
 
     const dueDateValue = dueDate ? new Date(dueDate) : null
     const hasValidDueDate = !!dueDateValue && !Number.isNaN(dueDateValue.getTime())
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
 
-    const { data: creditInfo } = useGetCreditInfo();
-    const lastMonthBill = creditInfo?.totalAmountDue;
+    const { data: bankDetails } = useBankDetails();
+    const bank = useSelector((state: RootState) => state.creditCard.bank) || BANK_OPTIONS[0]
+    const normalizeBankName = (value: string) =>
+        value.trim().replaceAll("_", " ").replaceAll(/\s+/g, " ").toUpperCase()
+
+    const lastMonthBill = bank === BANK_OPTIONS[0]
+        ? (bankDetails ?? []).reduce((total: number, detail: BankDetailSchema) => total + Number(detail.totalAmountDue ?? 0), 0)
+        : Number(
+            bankDetails?.find((detail: BankDetailSchema) => normalizeBankName(detail.bank) === normalizeBankName(bank))?.totalAmountDue ?? 0
+        )
     const derivedBillStatus = lastMonthBill <= 0 ? "paid" : "pending";
 
     const dueDateLabel = hasValidDueDate

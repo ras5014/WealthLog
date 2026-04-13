@@ -4,6 +4,7 @@ import type {
 } from "./creditCard.types.ts";
 import db from "../../db/connection.ts";
 import {
+  creditCardBankInfo,
   creditCardInfo,
   creditCardTransactions,
   emiInfo,
@@ -127,6 +128,8 @@ export const extractTransactionsFromPDF = async (
     (t) => !existingRefs.has(t.referenceNumber),
   );
   const duplicateCount = allTransactions.length - newTransactions.length;
+  const bank =
+    CARD_DETAILS.find((c) => c.cardNumber === cardNumber)?.bank || "UNKNOWN";
 
   // 8. Persist new transactions to the database
   if (newTransactions.length > 0) {
@@ -139,21 +142,35 @@ export const extractTransactionsFromPDF = async (
         referenceNumber: t.referenceNumber,
         statementStartDate: t.statementStartDate.split("-").reverse().join("-"), // DD-MM-YYYY -> YYYY-MM-DD
         statementEndDate: t.statementEndDate.split("-").reverse().join("-"), // DD-MM-YYYY -> YYYY-MM-DD
-        bank:
-          CARD_DETAILS.find((c) => c.cardNumber === t.cardNumber)?.bank ||
-          "UNKNOWN",
+        bank,
       })),
     );
   }
 
   const billingEndDateStr = calculateBillingCycleDates(statementStartDate);
-  await db.update(creditCardInfo).set({
-    bankBillingDetails: {
-      totalAmountDue,
-      billingCycleStartDate: statementStartDate.split("-").reverse().join("-"),
-      billingCycleEndDate: billingEndDateStr,
-    },
+  const bankInfoPayload = {
+    bank,
+    totalAmountDue: totalAmountDue.toString(),
+    billingCycleStartDate: statementStartDate.split("-").reverse().join("-"),
+    billingCycleEndDate: billingEndDateStr,
+  };
+
+  const existingBankInfo = await db.query.creditCardBankInfo.findFirst({
+    where: (creditCardBank, { eq }) => eq(creditCardBank.bank, bank),
   });
+
+  if (existingBankInfo) {
+    await db
+      .update(creditCardBankInfo)
+      .set({
+        totalAmountDue: bankInfoPayload.totalAmountDue,
+        billingCycleStartDate: bankInfoPayload.billingCycleStartDate,
+        billingCycleEndDate: bankInfoPayload.billingCycleEndDate,
+      })
+      .where(eq(creditCardBankInfo.bank, existingBankInfo.bank));
+  } else {
+    await db.insert(creditCardBankInfo).values(bankInfoPayload);
+  }
 
   return {
     cardHolderName,

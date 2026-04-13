@@ -33,3 +33,10 @@ export const CreditInfoSchema = z.object({
 });
 
 export type CreditInfoType = z.infer<typeof CreditInfoSchema>;
+
+export type BankDetailSchema = {
+  bank: string;
+  totalAmountDue: number;
+  billingCycleStartDate: string;
+  billingCycleEndDate: string;
+};

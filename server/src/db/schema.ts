@@ -34,11 +34,17 @@ export const creditCardTransactions = pgTable(
 export const creditCardInfo = pgTable("credit_card_info", {
   id: serial("id").primaryKey(),
   budget: numeric("budget", { precision: 12, scale: 2 }).notNull(),
-  bankBillingDetails: jsonb("bank_billing_details").$type<{
-    totalAmountDue: number;
-    billingCycleStartDate: string;
-    billingCycleEndDate: string;
-  }>(),
+});
+
+export const creditCardBankInfo = pgTable("credit_card_bank_info", {
+  id: serial("id").primaryKey(),
+  bank: varchar("bank", { length: 64 }).notNull().unique(),
+  totalAmountDue: numeric("total_amount_due", {
+    precision: 12,
+    scale: 2,
+  }).notNull(),
+  billingCycleStartDate: date("billing_cycle_start_date").notNull(),
+  billingCycleEndDate: date("billing_cycle_end_date").notNull(),
 });
 
 export const emiInfo = pgTable("emi_info", {

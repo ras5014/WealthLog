@@ -8,6 +8,7 @@ import {
 } from "./creditCard.service.ts";
 import db from "../../db/connection.ts";
 import {
+  creditCardBankInfo,
   creditCardInfo,
   creditCardTransactions,
   emiInfo,
@@ -53,17 +54,12 @@ export const getCreditInfo = async (req: Request, res: Response) => {
     const result = await db
       .select({
         budget: creditCardInfo.budget,
-        bankBillingDetails: creditCardInfo.bankBillingDetails,
       })
       .from(creditCardInfo)
       .limit(1);
     const row = result[0];
     res.status(200).json({
       budget: row?.budget ?? 0,
-      totalAmountDue: row?.bankBillingDetails?.totalAmountDue ?? 0,
-      billingCycleStartDate:
-        row?.bankBillingDetails?.billingCycleStartDate ?? "",
-      billingCycleEndDate: row?.bankBillingDetails?.billingCycleEndDate ?? "",
     });
   } catch (error) {
     console.error(error);
@@ -139,5 +135,15 @@ export const getEmiInfo = async (req: Request, res: Response) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to fetch EMI info" });
+  }
+};
+
+export const getCreditCardBankDetails = async (req: Request, res: Response) => {
+  try {
+    const result = await db.select().from(creditCardBankInfo);
+    res.status(200).json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch credit card bank details" });
   }
 };
