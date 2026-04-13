@@ -2,6 +2,7 @@ import { createBrowserRouter } from "react-router";
 import { RouterProvider } from "react-router/dom";
 import MainLayout from "./layouts/MainLayout";
 import CreditCardPage from "./features/credit_card";
+import EmisPage from "./features/emis";
 import { Toaster } from 'react-hot-toast'
 
 function PagePlaceholder({ title }: { title: string }) {
@@ -32,7 +33,7 @@ const router = createBrowserRouter([
             },
             {
                 path: "emis",
-                Component: () => <PagePlaceholder title="EMIs" />,
+                Component: EmisPage,
             },
             {
                 path: "mf-savings",
