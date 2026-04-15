@@ -4,8 +4,12 @@ import type { EmiItem } from "./type";
 
 
 export default function Index() {
+
+    // Getting EMI Data
     const { data: emis, isPending, isError } = useEmi();
     const emiList = (emis ?? []) as EmiItem[];
+
+    // Calculations and sending as props to child components
 
     const totalLoanAmount = emiList.reduce(
         (total, emi) => total + Number(emi.totalAmount ?? 0),

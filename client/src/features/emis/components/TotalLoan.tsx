@@ -51,7 +51,7 @@ export default function TotalLoan({
 
     return (
         <Card className="overflow-hidden border-border/60 bg-linear-to-br from-card via-card to-muted/15">
-            <CardHeader className="border-b border-border/60 bg-muted/10 h-20">
+            <CardHeader className="border-b border-border/60 bg-muted/10 py-2">
                 <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
@@ -61,15 +61,15 @@ export default function TotalLoan({
                         <CardDescription>Paid versus outstanding amount across all EMIs</CardDescription>
                     </div>
 
-                    <span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-md font-semibold text-white">
+                    <span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-shadow-md font-semibold text-white">
                         {paidPercentage}% cleared
                     </span>
                 </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-2">
                 <ChartContainer
                     config={chartConfig}
-                    className="mx-auto h-[240px] w-full max-w-[260px]"
+                    className="mx-auto h-[208px] w-full max-w-[232px]"
                 >
                     <PieChart>
                         <ChartTooltip
@@ -77,7 +77,7 @@ export default function TotalLoan({
                             content={
                                 <ChartTooltipContent
                                     formatter={(value, name) => (
-                                        <div className="flex min-w-[140px] items-center justify-between gap-4">
+                                        <div className="flex min-w-35 items-center justify-between gap-4">
                                             <span className="text-muted-foreground">{String(name)}</span>
                                             <span className="font-medium text-foreground">
                                                 {formatCurrency(Number(value))}
@@ -91,8 +91,8 @@ export default function TotalLoan({
                             data={chartData}
                             dataKey="value"
                             nameKey="label"
-                            innerRadius={62}
-                            outerRadius={92}
+                            innerRadius={56}
+                            outerRadius={82}
                             strokeWidth={0}
                             paddingAngle={3}
                         >
@@ -121,7 +121,7 @@ export default function TotalLoan({
                                             </tspan>
                                             <tspan
                                                 x={viewBox.cx}
-                                                y={viewBox.cy + 18}
+                                                y={viewBox.cy + 16}
                                                 className="fill-muted-foreground text-[11px]"
                                             >
                                                 Paid so far
@@ -134,62 +134,42 @@ export default function TotalLoan({
                     </PieChart>
                 </ChartContainer>
 
-                <div className="space-y-1.5 text-center">
-                    <p className="text-sm font-semibold text-foreground">
-                        {remainingAmount > 0
-                            ? `${formatCurrency(remainingAmount)} left to repay`
-                            : "All EMIs fully paid"}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                        {paidPercentage}% of your total financed amount has been cleared.
-                    </p>
-                </div>
-
                 <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-2xl border border-border/60 bg-background/60 p-3.5">
+                    <div className="rounded-2xl border border-border/60 bg-background/60 p-3">
                         <div className="flex items-center gap-2 text-muted-foreground">
                             <CheckCircle2 className="size-4 text-primary" />
                             <p className="text-xs font-medium uppercase tracking-[0.18em]">
                                 Paid amount
                             </p>
                         </div>
-                        <p className="mt-2 text-xl font-semibold text-foreground">
+                        <p className="mt-1.5 text-xl font-semibold text-foreground ml-6">
                             {formatCurrency(totalPaidAmount)}
                         </p>
                     </div>
 
-                    <div className="rounded-2xl border border-border/60 bg-background/60 p-3.5">
+                    <div className="rounded-2xl border border-border/60 bg-background/60 p-3">
                         <div className="flex items-center gap-2 text-muted-foreground">
                             <Clock3 className="size-4 text-sky-500" />
                             <p className="text-xs font-medium uppercase tracking-[0.18em]">
                                 Remaining
                             </p>
                         </div>
-                        <p className="mt-2 text-xl font-semibold text-foreground">
+                        <p className="mt-1.5 text-xl font-semibold text-foreground ml-6">
                             {formatCurrency(remainingAmount)}
                         </p>
                     </div>
                 </div>
 
-                <div className="grid gap-3 rounded-2xl border border-border/60 bg-background/40 p-3.5 sm:grid-cols-[1fr_auto] sm:items-center">
-                    <div>
-                        <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                            Total financed
-                        </p>
-                        <p className="mt-2 text-2xl font-semibold text-foreground">
-                            {formatCurrency(totalLoanAmount)}
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-2 self-start sm:self-center">
-                        {chartData.map((item) => (
-                            <div key={item.key} className="flex items-center gap-2">
-                                <span
-                                    className={cn("size-2.5 rounded-full")}
-                                    style={{ backgroundColor: item.fill }}
-                                />
-                                <span className="text-xs text-muted-foreground">{item.label}</span>
-                            </div>
-                        ))}
+                <div className="rounded-[24px] border border-border/60 bg-linear-to-r from-background/80 via-background/60 to-primary/5 p-3.5">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                        <div className="flex items-center w-full justify-evenly">
+                            <p className="text-md font-medium uppercase tracking-[0.24em] text-muted-foreground">
+                                Total financed
+                            </p>
+                            <p className="mt-1.5 text-[1.7rem] font-semibold tracking-tight text-foreground ml-6">
+                                {formatCurrency(totalLoanAmount)}
+                            </p>
+                        </div>
                     </div>
                 </div>
             </CardContent>
