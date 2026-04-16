@@ -27,6 +27,7 @@ const chartData = [
     { month: "April", desktop: 73 },
     { month: "May", desktop: 209 },
     { month: "June", desktop: 214 },
+    { month: "July", desktop: 300 }
 ]
 
 const chartConfig = {
@@ -38,7 +39,7 @@ const chartConfig = {
 
 export function EmiForecasting() {
     return (
-        <Card>
+        <Card className="col-span-2">
             <CardHeader>
                 <CardTitle>Bar Chart - Label</CardTitle>
                 <CardDescription>January - June 2024</CardDescription>
