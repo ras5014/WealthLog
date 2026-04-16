@@ -225,7 +225,7 @@ export const getAllLatestTransactions = async () => {
   return { transactions, totalDayPassed };
 };
 
-export const extractEmisFromPDF = async (pdfText: string) => {
+export const extractEmisFromPDF = async (pdfText: string, bank: string) => {
   // 1. Extract merchant name
   const merchantRegex = /Selected Merchant\s*:(.*)/;
   const merchantMatch = merchantRegex.exec(pdfText);
@@ -284,12 +284,14 @@ export const extractEmisFromPDF = async (pdfText: string) => {
     await db
       .update(emiInfo)
       .set({
+        bank,
         totalAmount: totalAmount.toFixed(2),
         amortizationSchedule: schedule,
       })
       .where(eq(emiInfo.id, existing.id));
   } else {
     await db.insert(emiInfo).values({
+      bank,
       merchant,
       totalAmount: totalAmount.toFixed(2),
       amortizationSchedule: schedule,

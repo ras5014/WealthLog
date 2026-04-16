@@ -21,6 +21,7 @@ import { useBankDetails } from "../hooks/useBankDetails"
 import { useSelector } from "react-redux"
 import type { RootState } from "@/lib/store"
 import { BANK_OPTIONS } from "@/lib/constants"
+import { useEmi } from "@/hooks/useEmi"
 
 const defaultProps = {
     totalSpent: 0,
@@ -80,6 +81,31 @@ export default function CreditInfo(props: Readonly<TotalSpentProps>) {
 
     const isUp = trend > 0
     const TrendIcon = isUp ? ArrowUpRight : ArrowDownRight
+
+    // Get the EMIs
+    const { data: emis, isPending: isEmiPending, isError: isEmiError } = useEmi();
+    // Calculate expected EMI for this billing cycle
+
+    const selectedBank = normalizeBankName(bank);
+    const isAllBanks = bank === BANK_OPTIONS[0];
+
+    const selectedBankDetail = bankDetails?.find(
+        (detail: BankDetailSchema) => normalizeBankName(detail.bank) === selectedBank
+    );
+    const cycleStart = isAllBanks ? bankDetails?.[0]?.billingCycleStartDate : selectedBankDetail?.billingCycleStartDate;
+    const cycleEnd = isAllBanks ? bankDetails?.[0]?.billingCycleEndDate : selectedBankDetail?.billingCycleEndDate;
+
+    const totalEmiAmount = (emis ?? []).reduce((sum, emi) => {
+        const emiBank = normalizeBankName(emi.bank);
+        if (emiBank !== selectedBank && !isAllBanks) return sum;
+
+        return emi.amortizationSchedule.reduce((acc, installment) => {
+            if (cycleStart && cycleEnd && installment.paymentDate >= cycleStart && installment.paymentDate <= cycleEnd) {
+                return acc + Number(installment.installmentAmount);
+            }
+            return acc;
+        }, sum);
+    }, 0);
 
     return (
         <Card className="flex-1 overflow-hidden border-border/60 bg-linear-to-br from-card via-card to-muted/20">
@@ -190,7 +216,7 @@ export default function CreditInfo(props: Readonly<TotalSpentProps>) {
                             <span>Expected EMI</span>
                         </span>
                         <span className="font-semibold text-foreground">
-                            {formatCurrency(0)}/month
+                            {formatCurrency(totalEmiAmount)}/month
                         </span>
                     </div>
 

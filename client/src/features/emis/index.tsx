@@ -1,5 +1,6 @@
+import { EmiForecasting } from "./components/EmiForecasting";
 import TotalLoan from "./components/TotalLoan";
-import { useEmi } from "./hooks/useEmi";
+import { useEmi } from "../../hooks/useEmi";
 import type { EmiItem } from "./type";
 
 
@@ -36,11 +37,14 @@ export default function Index() {
             {isPending && <p>Loading...</p>}
             {isError && <p>Error loading EMIs</p>}
             {emis && (
-                <TotalLoan
-                    totalLoanAmount={totalLoanAmount}
-                    totalPaidAmount={totalPaidAmount}
-                    remainingAmount={remainingAmount}
-                />
+                <>
+                    <TotalLoan
+                        totalLoanAmount={totalLoanAmount}
+                        totalPaidAmount={totalPaidAmount}
+                        remainingAmount={remainingAmount}
+                    />
+                    <EmiForecasting />
+                </>
             )}
         </div>
     )

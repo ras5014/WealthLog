@@ -115,9 +115,10 @@ export const synchronizeEMI_ICICI = async (req: Request, res: Response) => {
   const fileBuffer = await readFile(filePath);
   const parser = new PDFParse({ data: fileBuffer });
   try {
+    const bank = req.body.bank;
     const pdfData = await parser.getText();
 
-    const result = await extractEmisFromPDF(pdfData.text);
+    const result = await extractEmisFromPDF(pdfData.text, bank);
     res.status(200).json(result);
   } catch (error) {
     console.error(error);
