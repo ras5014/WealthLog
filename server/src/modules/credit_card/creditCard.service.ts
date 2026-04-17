@@ -194,6 +194,15 @@ export const getAllLatestTransactions = async () => {
     orderBy: (transactions, { desc }) => [desc(transactions.transactionDate)],
   });
 
+  // If the latest transaction's billing cycle has ended, we're in a new cycle with no transactions
+  if (latestTransaction) {
+    const today = new Date();
+    const cycleEnd = new Date(latestTransaction.statementEndDate);
+    if (today > cycleEnd) {
+      return { transactions: [], totalDayPassed: 0 };
+    }
+  }
+
   const transactions = await db.query.creditCardTransactions.findMany({
     columns: {
       id: true,
