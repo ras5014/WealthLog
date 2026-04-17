@@ -16,6 +16,8 @@ app.use(
   (await import("./modules/credit_card/creditCard.router.ts")).default,
 );
 
+app.use("/api/v1/emi", (await import("./modules/emi/emi.router.ts")).default);
+
 export { app };
 
 export default app;

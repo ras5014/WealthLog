@@ -2,7 +2,7 @@ import api from "@/lib/axios";
 import { useQuery } from "@tanstack/react-query";
 
 const getEmis = async () => {
-  const response = await api.get("/credit-card/get-emi-info");
+  const response = await api.get("/emi/get-emi-info");
   return response.data;
 };
 

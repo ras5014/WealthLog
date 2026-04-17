@@ -86,6 +86,8 @@ export default function CreditInfo(props: Readonly<TotalSpentProps>) {
     const { data: emis, isPending: isEmiPending, isError: isEmiError } = useEmi();
     // Calculate expected EMI for this billing cycle
 
+    console.log("EMI data:", emis);
+
     const selectedBank = normalizeBankName(bank);
     const isAllBanks = bank === BANK_OPTIONS[0];
 

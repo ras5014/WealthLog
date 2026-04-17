@@ -11,7 +11,7 @@ import {
     ChartTooltipContent,
     type ChartConfig,
 } from "@/components/ui/chart"
-import { cn, formatCurrency } from "@/lib/utils"
+import { formatCurrency } from "@/lib/utils"
 import { CheckCircle2, CircleDollarSign, Clock3 } from "lucide-react"
 import { Cell, Label, Pie, PieChart } from "recharts"
 import type { TotalLoanProps } from "../type"
