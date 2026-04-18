@@ -186,6 +186,16 @@ export const extractTransactionsFromPDF = async (
 };
 
 export const getAllLatestTransactions = async () => {
+  // TODO: When adding banks other than ICICI, gotta use banks's billing cycle
+  const billingCycleDates = await db.query.creditCardBankInfo.findMany({
+    columns: {
+      bank: true,
+      billingCycleStartDate: true,
+      billingCycleEndDate: true,
+    },
+  });
+
+  // This is to know till which date statement is uploaded, crucial to find no. of days passed and burn rate
   const latestTransaction = await db.query.creditCardTransactions.findFirst({
     columns: {
       statementStartDate: true,
@@ -193,15 +203,6 @@ export const getAllLatestTransactions = async () => {
     },
     orderBy: (transactions, { desc }) => [desc(transactions.transactionDate)],
   });
-
-  // If the latest transaction's billing cycle has ended, we're in a new cycle with no transactions
-  if (latestTransaction) {
-    const today = new Date();
-    const cycleEnd = new Date(latestTransaction.statementEndDate);
-    if (today > cycleEnd) {
-      return { transactions: [], totalDayPassed: 0 };
-    }
-  }
 
   const transactions = await db.query.creditCardTransactions.findMany({
     columns: {
@@ -218,7 +219,7 @@ export const getAllLatestTransactions = async () => {
     where: (transactions, { eq }) =>
       eq(
         transactions.statementStartDate,
-        latestTransaction?.statementStartDate || "",
+        billingCycleDates[0].billingCycleStartDate,
       ),
     orderBy: (transactions, { desc }) => [desc(transactions.transactionDate)],
   });
