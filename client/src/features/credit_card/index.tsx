@@ -32,12 +32,6 @@ export default function Index() {
 
     const filteredTransactions = filterTransactionsForBank(transactions || [], bank);
 
-    // For all banks
-    const totalSpends = transactions?.reduce((acc, transaction) => {
-        const amount = Number(transaction.amount);
-        return transaction.type === "Dr" ? acc + amount : acc - amount;
-    }, 0) || 0;
-
     // For selected bank
     const totalSpendsForSelectedBank = filteredTransactions?.reduce((acc, transaction) => {
         const amount = Number(transaction.amount);
@@ -45,7 +39,7 @@ export default function Index() {
     }, 0) || 0;
 
     const totalDayPassedInCurrentCycle = totalDayPassed || 0;
-    const burnRatePerDay = totalDayPassedInCurrentCycle > 0 ? totalSpends / totalDayPassedInCurrentCycle : 0;
+    const burnRatePerDay = totalDayPassedInCurrentCycle > 0 ? totalSpendsForSelectedBank / totalDayPassedInCurrentCycle : 0;
     // TODO: Get last month same time spend from backend/redis cache, Store last 6 months spending data on redis
     const lastMonthSameTimeSpend = 10000;
     const dueDate = currentBillingCycle?.statementEndDate || "";
@@ -55,7 +49,7 @@ export default function Index() {
             {isPending && <p>Loading...</p>}
             {isError && <p>Error loading data</p>}
             <div className="grid gap-4 md:grid-cols-1 xl:grid-cols-3">
-                <TotalBudget totalSpends={totalSpends} />
+                <TotalBudget totalSpends={totalSpendsForSelectedBank} />
                 <CreditInfo
                     totalSpent={totalSpendsForSelectedBank}
                     burnRatePerDay={burnRatePerDay}

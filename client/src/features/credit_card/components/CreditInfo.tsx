@@ -138,7 +138,7 @@ export default function CreditInfo(props: Readonly<TotalSpentProps>) {
                                 Bill so far
                             </p>
                             <p className="mt-2 text-xl font-semibold text-foreground">
-                                {formatCurrency(totalSpent)}
+                                {formatCurrency(totalSpent + totalEmiAmount)}
                             </p>
                         </div>
 
