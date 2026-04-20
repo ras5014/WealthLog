@@ -21,7 +21,6 @@ import { useBankDetails } from "../hooks/useBankDetails"
 import { useSelector } from "react-redux"
 import type { RootState } from "@/lib/store"
 import { BANK_OPTIONS } from "@/lib/constants"
-import { useEmi } from "@/hooks/useEmi"
 
 const defaultProps = {
     totalSpent: 0,
@@ -31,6 +30,7 @@ const defaultProps = {
     billingCycleEndDate: "",
     lastMonthBill: 0,
     dueDate: "",
+    totalEmiAmount: 0,
 }
 
 export default function CreditInfo(props: Readonly<TotalSpentProps>) {
@@ -41,6 +41,7 @@ export default function CreditInfo(props: Readonly<TotalSpentProps>) {
         billingCycleStartDate,
         billingCycleEndDate,
         dueDate,
+        totalEmiAmount,
     } = {
         ...defaultProps,
         ...props,
@@ -82,33 +83,6 @@ export default function CreditInfo(props: Readonly<TotalSpentProps>) {
     const isUp = trend > 0
     const TrendIcon = isUp ? ArrowUpRight : ArrowDownRight
 
-    // Get the EMIs
-    const { data: emis, isPending: isEmiPending, isError: isEmiError } = useEmi();
-    // Calculate expected EMI for this billing cycle
-
-    console.log("EMI data:", emis);
-
-    const selectedBank = normalizeBankName(bank);
-    const isAllBanks = bank === BANK_OPTIONS[0];
-
-    const selectedBankDetail = bankDetails?.find(
-        (detail: BankDetailSchema) => normalizeBankName(detail.bank) === selectedBank
-    );
-    const cycleStart = isAllBanks ? bankDetails?.[0]?.billingCycleStartDate : selectedBankDetail?.billingCycleStartDate;
-    const cycleEnd = isAllBanks ? bankDetails?.[0]?.billingCycleEndDate : selectedBankDetail?.billingCycleEndDate;
-
-    const totalEmiAmount = (emis ?? []).reduce((sum, emi) => {
-        const emiBank = normalizeBankName(emi.bank);
-        if (emiBank !== selectedBank && !isAllBanks) return sum;
-
-        return emi.amortizationSchedule.reduce((acc, installment) => {
-            if (cycleStart && cycleEnd && installment.paymentDate >= cycleStart && installment.paymentDate <= cycleEnd) {
-                return acc + Number(installment.installmentAmount);
-            }
-            return acc;
-        }, sum);
-    }, 0);
-
     return (
         <Card className="flex-1 overflow-hidden border-border/60 bg-linear-to-br from-card via-card to-muted/20">
             <CardHeader className="border-b border-border/60 bg-muted/10 h-20">
@@ -116,7 +90,7 @@ export default function CreditInfo(props: Readonly<TotalSpentProps>) {
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
                             <Wallet2 className="size-6 text-muted-foreground" />
-                            <CardTitle className="text-base font-semibold">Total Bill Till Now</CardTitle>
+                            <CardTitle className="text-base font-semibold">Total Spent</CardTitle>
                         </div>
                         <CardDescription>Total card spend recorded for this statement period</CardDescription>
                     </div>
@@ -135,11 +109,15 @@ export default function CreditInfo(props: Readonly<TotalSpentProps>) {
                     <div className="grid gap-3 sm:grid-cols-2">
                         <div className="rounded-2xl border border-border/60 bg-background/60 p-3.5">
                             <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                                Bill so far
+                                Total Spent
                             </p>
                             <p className="mt-2 text-xl font-semibold text-foreground">
-                                {formatCurrency(totalSpent + totalEmiAmount)}
+                                {formatCurrency(totalSpent)}
                             </p>
+                            <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+                                <CalendarClock className="size-4" />
+                                <span>+ {formatCurrency(totalEmiAmount)} EMI</span>
+                            </div>
                         </div>
 
                         <div className="rounded-2xl border border-border/60 bg-background/60 p-3.5">

@@ -26,6 +26,7 @@ export type TotalSpentProps = {
   lastMonthBill?: number;
   dueDate?: string;
   lastMonthBillStatus?: "paid" | "pending" | "overdue";
+  totalEmiAmount?: number;
 };
 
 export const CreditInfoSchema = z.object({

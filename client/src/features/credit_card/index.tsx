@@ -7,7 +7,9 @@ import { columns } from "./components/transaction_table/columns";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/lib/store";
 import { BANK_OPTIONS } from "@/lib/constants";
-import type { CreditCardTransaction } from "./types";
+import type { BankDetailSchema, CreditCardTransaction } from "./types";
+import { useEmi } from "@/hooks/useEmi"
+import { useBankDetails } from "./hooks/useBankDetails";
 
 export default function Index() {
     // API calls and getting Redux Store Data
@@ -32,6 +34,12 @@ export default function Index() {
 
     const filteredTransactions = filterTransactionsForBank(transactions || [], bank);
 
+    // For all banks
+    const totalSpends = transactions?.reduce((acc, transaction) => {
+        const amount = Number(transaction.amount);
+        return transaction.type === "Dr" ? acc + amount : acc - amount;
+    }, 0) || 0;
+
     // For selected bank
     const totalSpendsForSelectedBank = filteredTransactions?.reduce((acc, transaction) => {
         const amount = Number(transaction.amount);
@@ -44,12 +52,48 @@ export default function Index() {
     const lastMonthSameTimeSpend = 10000;
     const dueDate = currentBillingCycle?.statementEndDate || "";
 
+    const { data: bankDetails } = useBankDetails();
+    // Get the EMIs
+    const { data: emis, isPending: isEmiPending, isError: isEmiError } = useEmi();
+    // Calculate expected EMI for this billing cycle
+    console.log("EMI data:", emis);
+
+    const selectedBank = normalizeBankName(bank);
+    const isAllBanks = bank === BANK_OPTIONS[0];
+
+    const selectedBankDetail = bankDetails?.find(
+        (detail: BankDetailSchema) => normalizeBankName(detail.bank) === selectedBank
+    );
+    const cycleStart = isAllBanks ? bankDetails?.[0]?.billingCycleStartDate : selectedBankDetail?.billingCycleStartDate;
+    const cycleEnd = isAllBanks ? bankDetails?.[0]?.billingCycleEndDate : selectedBankDetail?.billingCycleEndDate;
+
+    const totalEmiAmountAllBanks = (emis ?? []).reduce((sum, emi) => {
+        return emi.amortizationSchedule.reduce((acc, installment) => {
+            if (cycleStart && cycleEnd && installment.paymentDate >= cycleStart && installment.paymentDate <= cycleEnd) {
+                return acc + Number(installment.installmentAmount);
+            }
+            return acc;
+        }, sum);
+    }, 0);
+
+    const totalEmiAmount = isAllBanks ? totalEmiAmountAllBanks : (emis ?? []).reduce((sum, emi) => {
+        const emiBank = normalizeBankName(emi.bank);
+        if (emiBank !== selectedBank) return sum;
+
+        return emi.amortizationSchedule.reduce((acc, installment) => {
+            if (cycleStart && cycleEnd && installment.paymentDate >= cycleStart && installment.paymentDate <= cycleEnd) {
+                return acc + Number(installment.installmentAmount);
+            }
+            return acc;
+        }, sum);
+    }, 0);
+
     return (
         <>
             {isPending && <p>Loading...</p>}
             {isError && <p>Error loading data</p>}
             <div className="grid gap-4 md:grid-cols-1 xl:grid-cols-3">
-                <TotalBudget totalSpends={totalSpendsForSelectedBank} />
+                <TotalBudget totalSpends={totalSpends + totalEmiAmountAllBanks} />
                 <CreditInfo
                     totalSpent={totalSpendsForSelectedBank}
                     burnRatePerDay={burnRatePerDay}
@@ -57,6 +101,7 @@ export default function Index() {
                     billingCycleStartDate={currentBillingCycle?.statementStartDate}
                     billingCycleEndDate={currentBillingCycle?.statementEndDate}
                     dueDate={dueDate}
+                    totalEmiAmount={totalEmiAmount}
                 />
                 <CategorySpendChart />
             </div>
