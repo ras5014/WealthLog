@@ -1,17 +1,17 @@
 import {
   pgTable,
-  serial,
   varchar,
   numeric,
   date,
   uniqueIndex,
   jsonb,
+  uuid,
 } from "drizzle-orm/pg-core";
 
 export const creditCardTransactions = pgTable(
   "credit_card_transactions",
   {
-    id: serial("id").primaryKey(),
+    id: uuid("id").primaryKey().defaultRandom(),
     transactionDate: date("transaction_date").notNull(),
     details: varchar("details", { length: 512 }).notNull(),
     amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
@@ -32,12 +32,12 @@ export const creditCardTransactions = pgTable(
 );
 
 export const creditCardInfo = pgTable("credit_card_info", {
-  id: serial("id").primaryKey(),
+  id: uuid("id").primaryKey().defaultRandom(),
   budget: numeric("budget", { precision: 12, scale: 2 }).notNull(),
 });
 
 export const creditCardBankInfo = pgTable("credit_card_bank_info", {
-  id: serial("id").primaryKey(),
+  id: uuid("id").primaryKey().defaultRandom(),
   bank: varchar("bank", { length: 64 }).notNull().unique(),
   totalAmountDue: numeric("total_amount_due", {
     precision: 12,
@@ -48,8 +48,8 @@ export const creditCardBankInfo = pgTable("credit_card_bank_info", {
 });
 
 export const emiInfo = pgTable("emi_info", {
-  id: serial("id").primaryKey(),
-  bank: varchar("bank", { length: 64 }),
+  id: uuid("id").primaryKey().defaultRandom(),
+  bank: varchar("bank", { length: 64 }).notNull(),
   description: varchar("description", { length: 512 }),
   merchant: varchar("merchant", { length: 128 }),
   totalAmount: numeric("total_amount", { precision: 12, scale: 2 }),
@@ -62,6 +62,17 @@ export const emiInfo = pgTable("emi_info", {
       interestAmount: number;
       installmentAmount: number;
       paymentStatus?: "paid" | "pending";
+    }[]
+  >(),
+});
+
+export const emiRecords = pgTable("emi_records", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  label: varchar("label", { length: 128 }).notNull(),
+  totalAmount: jsonb("total_amount").$type<
+    {
+      description: string;
+      amount: number;
     }[]
   >(),
 });
