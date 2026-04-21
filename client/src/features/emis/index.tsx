@@ -1,49 +1,32 @@
 import { EmiForecasting } from "./components/EmiForecasting";
+import EMITable from "./components/EMITable";
 import TotalLoan from "./components/TotalLoan";
-import { useEmi } from "../../hooks/useEmi";
-import type { EmiItem } from "./type";
+import { useEmiDashboard } from "../../hooks/useEmi";
 
 
 export default function Index() {
 
-    // Getting EMI Data
-    const { data: emis, isPending, isError } = useEmi();
-    const emiList = (emis ?? []) as EmiItem[];
+    const { data, isPending, isError } = useEmiDashboard();
 
-    // Calculations and sending as props to child components
-
-    const totalLoanAmount = emiList.reduce(
-        (total, emi) => total + Number(emi.totalAmount ?? 0),
-        0
-    );
-
-    const totalPaidAmount = emiList.reduce(
-        (total, emi) =>
-            total +
-            (emi.amortizationSchedule ?? []).reduce(
-                (scheduleTotal, installment) =>
-                    installment.paymentStatus === "paid"
-                        ? scheduleTotal + Number(installment.installmentAmount ?? 0)
-                        : scheduleTotal,
-                0
-            ),
-        0
-    );
-
-    const remainingAmount = totalLoanAmount - totalPaidAmount;
+    // EMI end month: extract from the last emiRecord label (e.g. "17th Jul - 16th Aug (Oct 2026)")
+    const emiEndMonth = data?.emiRecords?.at(-1)?.label?.match(/\(([^)]+)\)/)?.[1] ?? null;
 
     return (
         <div className="grid gap-4 md:grid-cols-1 xl:grid-cols-3">
             {isPending && <p>Loading...</p>}
             {isError && <p>Error loading EMIs</p>}
-            {emis && (
+            {data && (
                 <>
                     <TotalLoan
-                        totalLoanAmount={totalLoanAmount}
-                        totalPaidAmount={totalPaidAmount}
-                        remainingAmount={remainingAmount}
+                        totalLoanAmount={data.totalLoanAmount}
+                        totalPaidAmount={data.totalPaidAmount}
+                        remainingAmount={data.remainingAmount}
                     />
-                    <EmiForecasting />
+                    <EmiForecasting
+                        emiRecords={data.emiRecords}
+                        emiEndMonth={emiEndMonth}
+                    />
+                    <EMITable />
                 </>
             )}
         </div>

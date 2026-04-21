@@ -8,7 +8,7 @@ import { useSelector } from "react-redux";
 import type { RootState } from "@/lib/store";
 import { BANK_OPTIONS } from "@/lib/constants";
 import type { BankDetailSchema, CreditCardTransaction } from "./types";
-import { useEmi } from "@/hooks/useEmi"
+import { useEmiInfo } from "@/hooks/useEmi"
 import { useBankDetails } from "./hooks/useBankDetails";
 
 export default function Index() {
@@ -54,7 +54,7 @@ export default function Index() {
 
     const { data: bankDetails } = useBankDetails();
     // Get the EMIs
-    const { data: emis, isPending: isEmiPending, isError: isEmiError } = useEmi();
+    const { data: emis, isPending: isEmiPending, isError: isEmiError } = useEmiInfo();
     // Calculate expected EMI for this billing cycle
     console.log("EMI data:", emis);
 

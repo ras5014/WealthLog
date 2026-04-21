@@ -4,7 +4,7 @@ import { creditCardTransactions, emiInfo } from "../../db/schema.ts";
 import { eq } from "drizzle-orm/sql/expressions/conditions";
 import { readFile, unlink } from "fs/promises";
 import { PDFParse } from "pdf-parse";
-import { extractEmisFromPDF } from "./emi.service.ts";
+import { extractEmisFromPDF, getEmiDashboardData } from "./emi.service.ts";
 
 export const addToEMI = async (req: Request, res: Response) => {
   try {
@@ -35,6 +35,16 @@ export const getEmiInfo = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to fetch EMI info" });
   }
 };
+export const getEmiDashboard = async (req: Request, res: Response) => {
+  try {
+    const result = await getEmiDashboardData();
+    res.status(200).json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch EMI dashboard data" });
+  }
+};
+
 export const synchronizeEMI_ICICI = async (req: Request, res: Response) => {
   // Check if a file was uploaded
   if (!req.file) {

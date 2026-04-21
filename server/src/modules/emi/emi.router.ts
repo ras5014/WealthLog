@@ -2,6 +2,7 @@ import { Router } from "express";
 import multer from "multer";
 import {
   addToEMI,
+  getEmiDashboard,
   getEmiInfo,
   synchronizeEMI_ICICI,
 } from "./emi.controller.ts";
@@ -19,5 +20,6 @@ router.post(
 router.post("/add-to-emi", addToEMI);
 
 router.get("/get-emi-info", getEmiInfo);
+router.get("/get-emi-dashboard", getEmiDashboard);
 
 export default router;

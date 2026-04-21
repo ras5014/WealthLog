@@ -1,6 +1,152 @@
 import { eq } from "drizzle-orm";
 import db from "../../db/connection.ts";
-import { emiInfo } from "../../db/schema.ts";
+import { creditCardBankInfo, emiInfo, emiRecords } from "../../db/schema.ts";
+
+const MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
+function getOrdinalSuffix(day: number): string {
+  if (day > 3 && day < 21) return `${day}th`;
+  switch (day % 10) {
+    case 1:
+      return `${day}st`;
+    case 2:
+      return `${day}nd`;
+    case 3:
+      return `${day}rd`;
+    default:
+      return `${day}th`;
+  }
+}
+
+function getCycleInfo(
+  paymentDate: string,
+  cycle: { startDay: number; endDay: number },
+) {
+  const date = new Date(paymentDate);
+  const day = date.getUTCDate();
+  const month = date.getUTCMonth();
+  const year = date.getUTCFullYear();
+
+  let cycleStartMonth: number;
+  let cycleEndMonth: number;
+  let payMonth: number;
+  let payYear: number;
+
+  if (day >= cycle.startDay) {
+    cycleStartMonth = month;
+    cycleEndMonth = (month + 1) % 12;
+    payMonth = (month + 2) % 12;
+    payYear = year + Math.floor((month + 2) / 12);
+  } else {
+    cycleStartMonth = (month - 1 + 12) % 12;
+    cycleEndMonth = month;
+    payMonth = (month + 1) % 12;
+    payYear = year + Math.floor((month + 1) / 12);
+  }
+
+  const label = `${getOrdinalSuffix(cycle.startDay)} ${MONTHS[cycleStartMonth]} - ${getOrdinalSuffix(cycle.endDay)} ${MONTHS[cycleEndMonth]} (${MONTHS[payMonth]} ${payYear})`;
+  const sortKey = payYear * 12 + payMonth;
+
+  return { label, sortKey };
+}
+
+export const processAndSaveEmiRecords = async () => {
+  const emis = await db.select().from(emiInfo);
+  const bankInfos = await db.select().from(creditCardBankInfo);
+
+  const bankCycleMap = new Map<string, { startDay: number; endDay: number }>();
+  for (const bank of bankInfos) {
+    const startDay = new Date(bank.billingCycleStartDate).getUTCDate();
+    const endDay = new Date(bank.billingCycleEndDate).getUTCDate();
+    bankCycleMap.set(bank.bank, { startDay, endDay });
+  }
+
+  const cycleMap = new Map<
+    string,
+    { items: { description: string; amount: number }[]; sortKey: number }
+  >();
+
+  for (const emi of emis) {
+    const cycle = bankCycleMap.get(emi.bank);
+    if (!cycle) continue;
+
+    const description = emi.description || emi.merchant || "Unknown";
+
+    for (const installment of emi.amortizationSchedule ?? []) {
+      const { label, sortKey } = getCycleInfo(installment.paymentDate, cycle);
+
+      const existing = cycleMap.get(label);
+      if (existing) {
+        existing.items.push({
+          description,
+          amount: installment.installmentAmount,
+        });
+      } else {
+        cycleMap.set(label, {
+          items: [{ description, amount: installment.installmentAmount }],
+          sortKey,
+        });
+      }
+    }
+  }
+
+  await db.delete(emiRecords);
+
+  const records = Array.from(cycleMap.entries())
+    .sort(([, a], [, b]) => a.sortKey - b.sortKey)
+    .map(([label, { items }]) => ({
+      label,
+      totalAmount: items,
+    }));
+
+  if (records.length > 0) {
+    await db.insert(emiRecords).values(records);
+  }
+
+  return records;
+};
+
+export const getEmiDashboardData = async () => {
+  const emis = await db.select().from(emiInfo);
+  const records = await db.select().from(emiRecords);
+
+  const totalLoanAmount = emis.reduce(
+    (total, emi) => total + Number(emi.totalAmount ?? 0),
+    0,
+  );
+
+  const totalPaidAmount = emis.reduce(
+    (total, emi) =>
+      total +
+      (emi.amortizationSchedule ?? []).reduce(
+        (sum, inst) =>
+          inst.paymentStatus === "paid" ? sum + inst.installmentAmount : sum,
+        0,
+      ),
+    0,
+  );
+
+  return {
+    emiRecords: records,
+    totalLoanAmount: Math.round(totalLoanAmount * 100) / 100,
+    totalPaidAmount: Math.round(totalPaidAmount * 100) / 100,
+    remainingAmount:
+      Math.round((totalLoanAmount - totalPaidAmount) * 100) / 100,
+  };
+};
 
 export const extractEmisFromPDF = async (pdfText: string, bank: string) => {
   // 1. Extract merchant name
@@ -75,8 +221,8 @@ export const extractEmisFromPDF = async (pdfText: string, bank: string) => {
     });
   }
 
-  // TODO: Get all EMI and forecast for every month
-  const emis = await db.select().from(emiInfo);
+  // Recompute emi_records after upsert
+  await processAndSaveEmiRecords();
 
   return {
     merchant,
