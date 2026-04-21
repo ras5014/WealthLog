@@ -8,23 +8,9 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import { useEmiInfo } from "@/hooks/useEmi";
 import type { EmiInfoItem } from "../type";
-
-const formatCurrency = (value: string | number) =>
-    new Intl.NumberFormat("en-IN", {
-        style: "currency",
-        currency: "INR",
-        maximumFractionDigits: 2,
-    }).format(Number(value));
-
-const formatDate = (value: string) =>
-    new Intl.DateTimeFormat("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-    }).format(new Date(value));
 
 function AmortizationTable({ emi }: { emi: EmiInfoItem }) {
     const schedule = emi.amortizationSchedule ?? [];

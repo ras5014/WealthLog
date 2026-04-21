@@ -17,9 +17,16 @@ export const percentFormatter = new Intl.NumberFormat("en-IN", {
   signDisplay: "always",
 });
 
-export function formatCurrency(value: number) {
-  return currencyFormatter.format(value);
+export function formatCurrency(value: number | string) {
+  return currencyFormatter.format(Number(value));
 }
+
+export const formatDate = (value: string) =>
+  new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(value));
 
 export function formatBillingCyclePeriod(startDate?: string, endDate?: string) {
   if (!startDate || !endDate) {
