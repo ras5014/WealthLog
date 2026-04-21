@@ -7,6 +7,7 @@ import {
   jsonb,
   uuid,
 } from "drizzle-orm/pg-core";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod"; // For Zod schema generation
 
 export const creditCardTransactions = pgTable(
   "credit_card_transactions",
@@ -76,3 +77,26 @@ export const emiRecords = pgTable("emi_records", {
     }[]
   >(),
 });
+
+// Zod Schemas for validation
+export const CreditCardTransactionInsertSchema = createInsertSchema(
+  creditCardTransactions,
+);
+
+export const CreditCardTransactionSelectSchema = createSelectSchema(
+  creditCardTransactions,
+);
+
+export const CreditCardInfoInsertSchema = createInsertSchema(creditCardInfo);
+export const CreditCardInfoSelectSchema = createSelectSchema(creditCardInfo);
+
+export const CreditCardBankInfoInsertSchema =
+  createInsertSchema(creditCardBankInfo);
+export const CreditCardBankInfoSelectSchema =
+  createSelectSchema(creditCardBankInfo);
+
+export const EmiInfoInsertSchema = createInsertSchema(emiInfo);
+export const EmiInfoSelectSchema = createSelectSchema(emiInfo);
+
+export const EmiRecordsInsertSchema = createInsertSchema(emiRecords);
+export const EmiRecordsSelectSchema = createSelectSchema(emiRecords);

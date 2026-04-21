@@ -62,14 +62,15 @@ export const getCreditInfo = async (req: Request, res: Response) => {
 
 export const setCreditInfo = async (req: Request, res: Response) => {
   try {
+    const { amount } = req.body;
     const existingBudget = await db.select().from(creditCardInfo).limit(1);
-    if (existingBudget.length > 0 && req.body.amount) {
+    if (existingBudget.length > 0 && amount) {
       await db.update(creditCardInfo).set({
-        budget: req?.body?.amount?.toString(),
+        budget: amount,
       });
     } else {
       await db.insert(creditCardInfo).values({
-        budget: req?.body?.amount?.toString() ?? "0",
+        budget: amount ?? 0,
       });
     }
     res.status(200).json({ message: "Budget set successfully" });
