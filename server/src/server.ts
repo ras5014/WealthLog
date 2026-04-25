@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import { errorHandler, notFound } from "./middlewares/errorHandler.ts";
 
 const app = express();
 
@@ -17,6 +18,9 @@ app.use(
 );
 
 app.use("/api/v1/emi", (await import("./modules/emi/emi.router.ts")).default);
+
+app.use(errorHandler);
+app.use(notFound);
 
 export { app };
 

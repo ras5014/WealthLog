@@ -3,12 +3,7 @@ import type {
   ParsedStatementResult,
 } from "./creditCard.types.ts";
 import db from "../../db/connection.ts";
-import {
-  creditCardBankInfo,
-  creditCardInfo,
-  creditCardTransactions,
-  emiInfo,
-} from "../../db/schema.ts";
+import { creditCardBankInfo, creditCardTransactions } from "../../db/schema.ts";
 import { and, eq, inArray } from "drizzle-orm";
 import { PREFIXES_TO_EXCLUDE, CARD_DETAILS } from "../../config/constants.ts";
 import { calculateBillingCycleDates } from "../../lib/utils.ts";
