@@ -7,11 +7,12 @@ import {
 } from "./creditCard.service.ts";
 import db from "../../db/connection.ts";
 import { creditCardBankInfo, creditCardInfo } from "../../db/schema.ts";
+import { AppError } from "../../middlewares/errorHandler.ts";
 
 export const process_ICICIStatement = async (req: Request, res: Response) => {
   // Check if a file was uploaded
   if (!req.file) {
-    return res.status(400).json({ error: "No file provided" });
+    throw new AppError("No file uploaded", 400);
   }
   const filePath = req.file.path;
   const fileBuffer = await readFile(filePath);
@@ -25,7 +26,7 @@ export const process_ICICIStatement = async (req: Request, res: Response) => {
     res.status(200).json(result);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Failed to process PDF" });
+    throw new AppError("Failed to process PDF", 500);
   } finally {
     await parser.destroy();
     await unlink(filePath).catch(() => undefined);
@@ -33,59 +34,39 @@ export const process_ICICIStatement = async (req: Request, res: Response) => {
 };
 
 export const getTransactions = async (req: Request, res: Response) => {
-  try {
-    const result = await getAllLatestTransactions();
-    res.status(200).json(result);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to fetch transactions" });
-  }
+  const result = await getAllLatestTransactions();
+  res.status(200).json(result);
 };
 
 export const getCreditInfo = async (req: Request, res: Response) => {
-  try {
-    const result = await db
-      .select({
-        budget: creditCardInfo.budget,
-      })
-      .from(creditCardInfo)
-      .limit(1);
-    const row = result[0];
-    res.status(200).json({
-      budget: row?.budget ?? 0,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to fetch credit info" });
-  }
+  const result = await db
+    .select({
+      budget: creditCardInfo.budget,
+    })
+    .from(creditCardInfo)
+    .limit(1);
+  const row = result[0];
+  res.status(200).json({
+    budget: row?.budget ?? 0,
+  });
 };
 
 export const setCreditInfo = async (req: Request, res: Response) => {
-  try {
-    const { amount } = req.body;
-    const existingBudget = await db.select().from(creditCardInfo).limit(1);
-    if (existingBudget.length > 0 && amount) {
-      await db.update(creditCardInfo).set({
-        budget: amount,
-      });
-    } else {
-      await db.insert(creditCardInfo).values({
-        budget: amount ?? 0,
-      });
-    }
-    res.status(200).json({ message: "Budget set successfully" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to set budget" });
+  const { amount } = req.body;
+  const existingBudget = await db.select().from(creditCardInfo).limit(1);
+  if (existingBudget.length > 0 && amount) {
+    await db.update(creditCardInfo).set({
+      budget: amount,
+    });
+  } else {
+    await db.insert(creditCardInfo).values({
+      budget: amount ?? 0,
+    });
   }
+  res.status(200).json({ message: "Budget set successfully" });
 };
 
 export const getCreditCardBankDetails = async (req: Request, res: Response) => {
-  try {
-    const result = await db.select().from(creditCardBankInfo);
-    res.status(200).json(result);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to fetch credit card bank details" });
-  }
+  const result = await db.select().from(creditCardBankInfo);
+  res.status(200).json(result);
 };

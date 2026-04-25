@@ -1,19 +1,27 @@
 import type { Request, Response, NextFunction } from "express";
 import env from "../config/env.ts";
 
-// Adding a custom error interface that extends the built-in Error interface
-export interface customError extends Error {
-  status?: number;
-  code?: string;
+// Adding a custom error class that extends the built-in Error
+export class AppError extends Error {
+  status: number;
+
+  constructor(message: string, status: number = 500) {
+    super(message);
+    this.status = status;
+    this.name = this.constructor.name;
+    Error.captureStackTrace(this, this.constructor);
+  }
 }
 
 export const errorHandler = (
-  err: customError,
+  err: AppError,
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
-  console.error(err.stack); // If in dev
+  if (env.APP_STAGE === "dev") {
+    console.error(err.stack); // If in dev
+  }
 
   // Default error
   let status = err.status || 500;
@@ -40,7 +48,6 @@ export const errorHandler = (
 };
 
 export const notFound = (req: Request, res: Response, next: NextFunction) => {
-  const error = new Error(`Not found - ${req.originalUrl}`) as customError;
-  error.status = 404;
+  const error = new AppError(`Not found - ${req.originalUrl}`, 404);
   next(error);
 };
