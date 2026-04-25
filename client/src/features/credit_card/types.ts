@@ -26,6 +26,7 @@ export type TotalSpentProps = {
   lastMonthBill?: number;
   dueDate?: string;
   lastMonthBillStatus?: "paid" | "pending" | "overdue";
+  totalEmiAmount?: number;
 };
 
 export const CreditInfoSchema = z.object({
@@ -33,3 +34,10 @@ export const CreditInfoSchema = z.object({
 });
 
 export type CreditInfoType = z.infer<typeof CreditInfoSchema>;
+
+export type BankDetailSchema = {
+  bank: string;
+  totalAmountDue: number;
+  billingCycleStartDate: string;
+  billingCycleEndDate: string;
+};

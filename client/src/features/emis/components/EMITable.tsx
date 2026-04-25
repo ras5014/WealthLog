@@ -1,0 +1,211 @@
+import { useState } from "react";
+import { ChevronDown, ChevronRight, Landmark } from "lucide-react";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import { cn, formatCurrency, formatDate } from "@/lib/utils";
+import { useEmiInfo } from "@/hooks/useEmi";
+import type { EmiInfoItem } from "../type";
+
+function AmortizationTable({ emi }: { emi: EmiInfoItem }) {
+    const schedule = emi.amortizationSchedule ?? [];
+    const label = emi.description || emi.merchant || "Unknown";
+
+    return (
+        <TableRow className="hover:bg-transparent">
+            <TableCell colSpan={6} className="p-0">
+                <div className="border-l-4 border-l-blue-500 bg-muted/10 px-8 py-4">
+                    <p className="mb-3 text-sm font-semibold text-foreground">
+                        Amortization Schedule — <span className="text-blue-600">{label}</span>
+                    </p>
+                    <Table>
+                        <TableHeader className="bg-muted/40">
+                            <TableRow className="hover:bg-transparent">
+                                <TableHead className="h-10 px-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">EMI #</TableHead>
+                                <TableHead className="h-10 px-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Payment Date</TableHead>
+                                <TableHead className="h-10 px-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Principal</TableHead>
+                                <TableHead className="h-10 px-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Interest</TableHead>
+                                <TableHead className="h-10 px-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Installment</TableHead>
+                                <TableHead className="h-10 px-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Status</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {schedule.map((item, idx) => (
+                                <TableRow
+                                    key={item.emiNo}
+                                    className={cn(
+                                        "border-border/60",
+                                        idx % 2 === 0 ? "bg-background" : "bg-muted/20",
+                                    )}
+                                >
+                                    <TableCell className="px-4 py-3">
+                                        <code className="rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground">
+                                            #{item.emiNo}
+                                        </code>
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3">
+                                        <p className="font-medium text-foreground">{formatDate(item.paymentDate)}</p>
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3 font-semibold tabular-nums text-foreground">
+                                        {formatCurrency(item.principalAmount)}
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3 tabular-nums text-muted-foreground">
+                                        {formatCurrency(item.interestAmount)}
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3 font-semibold tabular-nums text-foreground">
+                                        {formatCurrency(item.installmentAmount)}
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3">
+                                        <span
+                                            className={cn(
+                                                "inline-flex min-w-20 items-center justify-center rounded-full px-2.5 py-1 text-xs font-semibold tracking-wide",
+                                                item.paymentStatus === "paid"
+                                                    ? "bg-emerald-500/10 text-emerald-700 ring-1 ring-emerald-500/20"
+                                                    : "bg-amber-500/10 text-amber-700 ring-1 ring-amber-500/20",
+                                            )}
+                                        >
+                                            {item.paymentStatus === "paid" ? "Paid" : "Pending"}
+                                        </span>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+            </TableCell>
+        </TableRow>
+    );
+}
+
+export default function EMITable() {
+    const { data: emis, isPending, isError } = useEmiInfo();
+    const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+    const toggleRow = (id: string) => {
+        setExpandedIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+            return next;
+        });
+    };
+
+    if (isPending) return <p>Loading EMI info...</p>;
+    if (isError) return <p>Error loading EMI info</p>;
+    if (!emis || emis.length === 0) return <p>No EMIs found</p>;
+
+    return (
+        <div className="xl:col-span-3 overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
+            <div className="flex items-center justify-between border-b border-border/60 bg-gradient-to-r from-blue-500/5 via-transparent to-violet-500/5 px-4 py-3">
+                <div>
+                    <p className="text-lg font-semibold text-foreground flex items-center gap-2">
+                        <Landmark className="h-5 w-5" /> EMI Details
+                        <span className="text-xs text-muted-foreground">
+                            {emis.length} active {emis.length === 1 ? "loan" : "loans"}
+                        </span>
+                    </p>
+                </div>
+            </div>
+
+            <Table>
+                <TableHeader className="bg-muted/40">
+                    <TableRow className="hover:bg-transparent">
+                        <TableHead className="h-12 w-10 px-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground" />
+                        <TableHead className="h-12 px-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Description</TableHead>
+                        <TableHead className="h-12 px-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Bank</TableHead>
+                        <TableHead className="h-12 px-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Total Amount</TableHead>
+                        <TableHead className="h-12 px-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground text-center">Installments</TableHead>
+                        <TableHead className="h-12 px-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground text-center">Progress</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {emis.map((emi, idx) => {
+                        const isExpanded = expandedIds.has(emi.id);
+                        const schedule = emi.amortizationSchedule ?? [];
+                        const paidCount = schedule.filter((i) => i.paymentStatus === "paid").length;
+                        const totalCount = schedule.length;
+
+                        return (
+                            <>
+                                <TableRow
+                                    key={emi.id}
+                                    className={cn(
+                                        "cursor-pointer transition-colors",
+                                        isExpanded
+                                            ? "border-l-4 border-l-blue-500 bg-blue-500/5"
+                                            : cn("border-border/60", idx % 2 === 0 ? "bg-background" : "bg-muted/20"),
+                                    )}
+                                    aria-expanded={isExpanded}
+                                    onClick={() => toggleRow(emi.id)}
+                                >
+                                    <TableCell className="px-4 py-3">
+                                        {isExpanded ? (
+                                            <ChevronDown className="size-4 text-muted-foreground" />
+                                        ) : (
+                                            <ChevronRight className="size-4 text-muted-foreground" />
+                                        )}
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3">
+                                        <div className="min-w-48">
+                                            <p className="truncate font-medium text-foreground">
+                                                {emi.description || emi.merchant || "Unknown"}
+                                            </p>
+                                            {emi.merchant && emi.description && (
+                                                <p className="truncate text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                                                    {emi.merchant}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3">
+                                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                                            {emi.bank.replaceAll("_", " ")}
+                                        </p>
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3">
+                                        <p className="font-semibold tabular-nums text-foreground">
+                                            {formatCurrency(emi.totalAmount ?? 0)}
+                                        </p>
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3 text-center">
+                                        <code className="rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground">
+                                            {totalCount}
+                                        </code>
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3 text-center">
+                                        <span
+                                            className={cn(
+                                                "inline-flex min-w-20 items-center justify-center rounded-full px-2.5 py-1 text-xs font-semibold tracking-wide",
+                                                paidCount === totalCount
+                                                    ? "bg-emerald-500/10 text-emerald-700 ring-1 ring-emerald-500/20"
+                                                    : "bg-blue-500/10 text-blue-700 ring-1 ring-blue-500/20",
+                                            )}
+                                        >
+                                            {paidCount} / {totalCount}
+                                        </span>
+                                    </TableCell>
+                                </TableRow>
+                                {isExpanded && (
+                                    <AmortizationTable key={`${emi.id}-schedule`} emi={emi} />
+                                )}
+                                {isExpanded && (
+                                    <TableRow className="hover:bg-transparent">
+                                        <TableCell colSpan={6} className="h-2 bg-border/30 p-0" />
+                                    </TableRow>
+                                )}
+                            </>
+                        );
+                    })}
+                </TableBody>
+            </Table>
+        </div>
+    );
+}

@@ -16,8 +16,11 @@ import {
     CardTitle,
 } from "@/components/ui/card"
 import { cn, formatBillingCyclePeriod, formatCurrency, percentFormatter } from "@/lib/utils"
-import type { TotalSpentProps } from "../types"
-import { useGetCreditInfo } from "../hooks/useCreditInfo"
+import type { BankDetailSchema, TotalSpentProps } from "../types"
+import { useBankDetails } from "../hooks/useBankDetails"
+import { useSelector } from "react-redux"
+import type { RootState } from "@/lib/store"
+import { BANK_OPTIONS } from "@/lib/constants"
 
 const defaultProps = {
     totalSpent: 0,
@@ -27,6 +30,7 @@ const defaultProps = {
     billingCycleEndDate: "",
     lastMonthBill: 0,
     dueDate: "",
+    totalEmiAmount: 0,
 }
 
 export default function CreditInfo(props: Readonly<TotalSpentProps>) {
@@ -37,6 +41,7 @@ export default function CreditInfo(props: Readonly<TotalSpentProps>) {
         billingCycleStartDate,
         billingCycleEndDate,
         dueDate,
+        totalEmiAmount,
     } = {
         ...defaultProps,
         ...props,
@@ -54,11 +59,17 @@ export default function CreditInfo(props: Readonly<TotalSpentProps>) {
 
     const dueDateValue = dueDate ? new Date(dueDate) : null
     const hasValidDueDate = !!dueDateValue && !Number.isNaN(dueDateValue.getTime())
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
 
-    const { data: creditInfo } = useGetCreditInfo();
-    const lastMonthBill = creditInfo?.totalAmountDue;
+    const { data: bankDetails } = useBankDetails();
+    const bank = useSelector((state: RootState) => state.creditCard.bank) || BANK_OPTIONS[0]
+    const normalizeBankName = (value: string) =>
+        value.trim().replaceAll("_", " ").replaceAll(/\s+/g, " ").toUpperCase()
+
+    const lastMonthBill = bank === BANK_OPTIONS[0]
+        ? (bankDetails ?? []).reduce((total: number, detail: BankDetailSchema) => total + Number(detail.totalAmountDue ?? 0), 0)
+        : Number(
+            bankDetails?.find((detail: BankDetailSchema) => normalizeBankName(detail.bank) === normalizeBankName(bank))?.totalAmountDue ?? 0
+        )
     const derivedBillStatus = lastMonthBill <= 0 ? "paid" : "pending";
 
     const dueDateLabel = hasValidDueDate
@@ -79,7 +90,7 @@ export default function CreditInfo(props: Readonly<TotalSpentProps>) {
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
                             <Wallet2 className="size-6 text-muted-foreground" />
-                            <CardTitle className="text-base font-semibold">Total Bill Till Now</CardTitle>
+                            <CardTitle className="text-base font-semibold">Total Spent</CardTitle>
                         </div>
                         <CardDescription>Total card spend recorded for this statement period</CardDescription>
                     </div>
@@ -98,11 +109,15 @@ export default function CreditInfo(props: Readonly<TotalSpentProps>) {
                     <div className="grid gap-3 sm:grid-cols-2">
                         <div className="rounded-2xl border border-border/60 bg-background/60 p-3.5">
                             <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                                Bill so far
+                                Total Spent
                             </p>
                             <p className="mt-2 text-xl font-semibold text-foreground">
                                 {formatCurrency(totalSpent)}
                             </p>
+                            <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+                                <CalendarClock className="size-4" />
+                                <span>+ {formatCurrency(totalEmiAmount)} EMI</span>
+                            </div>
                         </div>
 
                         <div className="rounded-2xl border border-border/60 bg-background/60 p-3.5">
@@ -181,7 +196,7 @@ export default function CreditInfo(props: Readonly<TotalSpentProps>) {
                             <span>Expected EMI</span>
                         </span>
                         <span className="font-semibold text-foreground">
-                            {formatCurrency(0)}/month
+                            {formatCurrency(totalEmiAmount)}/month
                         </span>
                     </div>
 

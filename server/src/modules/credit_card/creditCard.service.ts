@@ -3,9 +3,15 @@ import type {
   ParsedStatementResult,
 } from "./creditCard.types.ts";
 import db from "../../db/connection.ts";
-import { creditCardInfo, creditCardTransactions } from "../../db/schema.ts";
+import {
+  creditCardBankInfo,
+  creditCardInfo,
+  creditCardTransactions,
+  emiInfo,
+} from "../../db/schema.ts";
 import { and, eq, inArray } from "drizzle-orm";
 import { PREFIXES_TO_EXCLUDE, CARD_DETAILS } from "../../config/constants.ts";
+import { calculateBillingCycleDates } from "../../lib/utils.ts";
 
 export const extractTransactionsFromPDF = async (
   pdfText: string,
@@ -122,6 +128,8 @@ export const extractTransactionsFromPDF = async (
     (t) => !existingRefs.has(t.referenceNumber),
   );
   const duplicateCount = allTransactions.length - newTransactions.length;
+  const bank =
+    CARD_DETAILS.find((c) => c.cardNumber === cardNumber)?.bank || "UNKNOWN";
 
   // 8. Persist new transactions to the database
   if (newTransactions.length > 0) {
@@ -134,17 +142,35 @@ export const extractTransactionsFromPDF = async (
         referenceNumber: t.referenceNumber,
         statementStartDate: t.statementStartDate.split("-").reverse().join("-"), // DD-MM-YYYY -> YYYY-MM-DD
         statementEndDate: t.statementEndDate.split("-").reverse().join("-"), // DD-MM-YYYY -> YYYY-MM-DD
-        bank:
-          CARD_DETAILS.find((c) => c.cardNumber === t.cardNumber)?.bank ||
-          "UNKNOWN",
+        bank,
       })),
     );
   }
 
-  // TODO: Add totalAmountDue to DB, Later update for each bank as a json
-  await db
-    .update(creditCardInfo)
-    .set({ totalAmountDue: totalAmountDue.toString() });
+  const billingEndDateStr = calculateBillingCycleDates(statementStartDate);
+  const bankInfoPayload = {
+    bank,
+    totalAmountDue: totalAmountDue.toString(),
+    billingCycleStartDate: statementStartDate.split("-").reverse().join("-"),
+    billingCycleEndDate: billingEndDateStr,
+  };
+
+  const existingBankInfo = await db.query.creditCardBankInfo.findFirst({
+    where: (creditCardBank, { eq }) => eq(creditCardBank.bank, bank),
+  });
+
+  if (existingBankInfo) {
+    await db
+      .update(creditCardBankInfo)
+      .set({
+        totalAmountDue: bankInfoPayload.totalAmountDue,
+        billingCycleStartDate: bankInfoPayload.billingCycleStartDate,
+        billingCycleEndDate: bankInfoPayload.billingCycleEndDate,
+      })
+      .where(eq(creditCardBankInfo.bank, existingBankInfo.bank));
+  } else {
+    await db.insert(creditCardBankInfo).values(bankInfoPayload);
+  }
 
   return {
     cardHolderName,
@@ -160,6 +186,16 @@ export const extractTransactionsFromPDF = async (
 };
 
 export const getAllLatestTransactions = async () => {
+  // TODO: When adding banks other than ICICI, gotta use banks's billing cycle
+  const billingCycleDates = await db.query.creditCardBankInfo.findMany({
+    columns: {
+      bank: true,
+      billingCycleStartDate: true,
+      billingCycleEndDate: true,
+    },
+  });
+
+  // This is to know till which date statement is uploaded, crucial to find no. of days passed and burn rate
   const latestTransaction = await db.query.creditCardTransactions.findFirst({
     columns: {
       statementStartDate: true,
@@ -183,7 +219,7 @@ export const getAllLatestTransactions = async () => {
     where: (transactions, { eq }) =>
       eq(
         transactions.statementStartDate,
-        latestTransaction?.statementStartDate || "",
+        billingCycleDates[0].billingCycleStartDate,
       ),
     orderBy: (transactions, { desc }) => [desc(transactions.transactionDate)],
   });

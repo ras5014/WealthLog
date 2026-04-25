@@ -6,7 +6,7 @@ import {
   getAllLatestTransactions,
 } from "./creditCard.service.ts";
 import db from "../../db/connection.ts";
-import { creditCardInfo } from "../../db/schema.ts";
+import { creditCardBankInfo, creditCardInfo } from "../../db/schema.ts";
 
 export const process_ICICIStatement = async (req: Request, res: Response) => {
   // Check if a file was uploaded
@@ -47,11 +47,13 @@ export const getCreditInfo = async (req: Request, res: Response) => {
     const result = await db
       .select({
         budget: creditCardInfo.budget,
-        totalAmountDue: creditCardInfo.totalAmountDue,
       })
       .from(creditCardInfo)
       .limit(1);
-    res.status(200).json(result[0] || { budget: 0, totalAmountDue: 0 });
+    const row = result[0];
+    res.status(200).json({
+      budget: row?.budget ?? 0,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to fetch credit info" });
@@ -60,24 +62,30 @@ export const getCreditInfo = async (req: Request, res: Response) => {
 
 export const setCreditInfo = async (req: Request, res: Response) => {
   try {
+    const { amount } = req.body;
     const existingBudget = await db.select().from(creditCardInfo).limit(1);
-    if (existingBudget.length > 0 && req.body.amount) {
+    if (existingBudget.length > 0 && amount) {
       await db.update(creditCardInfo).set({
-        budget: req?.body?.amount?.toString(),
-      });
-    } else if (existingBudget.length > 0 && req.body.totalAmountDue) {
-      await db.update(creditCardInfo).set({
-        totalAmountDue: req?.body?.totalAmountDue?.toString(),
+        budget: amount,
       });
     } else {
       await db.insert(creditCardInfo).values({
-        budget: req?.body?.amount?.toString() ?? "0",
-        totalAmountDue: req?.body?.totalAmountDue?.toString() ?? "0",
+        budget: amount ?? 0,
       });
     }
     res.status(200).json({ message: "Budget set successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to set budget" });
+  }
+};
+
+export const getCreditCardBankDetails = async (req: Request, res: Response) => {
+  try {
+    const result = await db.select().from(creditCardBankInfo);
+    res.status(200).json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch credit card bank details" });
   }
 };

@@ -3,3 +3,5 @@ export const BANK_OPTIONS = [
   "ICICI CORAL",
   "ICICI AMZNPAY",
 ] as const;
+
+export const CREDIT_CARD_TRANSACTIONS_PER_PAGE = 10;
