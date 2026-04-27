@@ -21,7 +21,7 @@ export default function Index() {
 
     // Calculations
     const currentBillingCycle = transactions?.[0];
-    const billingCycleEndDate = currentBillingCycle?.billingCycleEndDate;
+    const billingCycleEndDate = currentBillingCycle?.statementEndDate;
     if (billingCycleEndDate) {
         dispatch(setBillingCycleEndDate(billingCycleEndDate));
     }
