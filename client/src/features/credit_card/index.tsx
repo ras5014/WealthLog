@@ -4,14 +4,16 @@ import { useTransactions } from "./hooks/useTransactions";
 import CreditInfo from "./components/CreditInfo";
 import { DataTable } from "./components/transaction_table/data-table";
 import { columns } from "./components/transaction_table/columns";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "@/lib/store";
 import { BANK_OPTIONS } from "@/lib/constants";
 import type { BankDetailSchema, CreditCardTransaction } from "./types";
 import { useEmiInfo } from "@/hooks/useEmi"
 import { useBankDetails } from "./hooks/useBankDetails";
+import { setBillingCycleEndDate } from "./creditCardSlice";
 
 export default function Index() {
+    const dispatch = useDispatch();
     // API calls and getting Redux Store Data
     const bank = useSelector((state: RootState) => state.creditCard.bank) || BANK_OPTIONS[0];
     const { data, isPending, isError } = useTransactions();
@@ -19,6 +21,10 @@ export default function Index() {
 
     // Calculations
     const currentBillingCycle = transactions?.[0];
+    const billingCycleEndDate = currentBillingCycle?.billingCycleEndDate;
+    if (billingCycleEndDate) {
+        dispatch(setBillingCycleEndDate(billingCycleEndDate));
+    }
 
     const normalizeBankName = (value: string) =>
         value.trim().replaceAll("_", " ").replace(/\s+/g, " ").toUpperCase();
@@ -68,7 +74,7 @@ export default function Index() {
     const cycleEnd = isAllBanks ? bankDetails?.[0]?.billingCycleEndDate : selectedBankDetail?.billingCycleEndDate;
 
     const totalEmiAmountAllBanks = (emis ?? []).reduce((sum, emi) => {
-        return emi.amortizationSchedule.reduce((acc, installment) => {
+        return emi?.amortizationSchedule?.reduce((acc, installment) => {
             if (cycleStart && cycleEnd && installment.paymentDate >= cycleStart && installment.paymentDate <= cycleEnd) {
                 return acc + Number(installment.installmentAmount);
             }
@@ -80,7 +86,7 @@ export default function Index() {
         const emiBank = normalizeBankName(emi.bank);
         if (emiBank !== selectedBank) return sum;
 
-        return emi.amortizationSchedule.reduce((acc, installment) => {
+        return emi?.amortizationSchedule?.reduce((acc, installment) => {
             if (cycleStart && cycleEnd && installment.paymentDate >= cycleStart && installment.paymentDate <= cycleEnd) {
                 return acc + Number(installment.installmentAmount);
             }

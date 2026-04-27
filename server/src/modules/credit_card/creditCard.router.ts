@@ -20,13 +20,11 @@ router.post(
 );
 
 router.get("/get-transactions", getTransactions);
-router
-  .get("/credit-info", getCreditInfo)
-  .post(
-    "/credit-info",
-    validateBody(CreditCardInfoInsertSchema),
-    setCreditInfo,
-  );
+router.get("/credit-info", getCreditInfo).post(
+  "/credit-info",
+  // validateBody(CreditCardInfoInsertSchema),
+  setCreditInfo,
+);
 router.get("/get-credit-card-bank-details", getCreditCardBankDetails);
 
 export default router;

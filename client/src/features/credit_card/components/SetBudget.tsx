@@ -44,10 +44,10 @@ export default function SetBudget() {
         <AlertDialog>
             <AlertDialogTrigger asChild>
                 <Button
-                    variant="outline"
-                    className="w-56 justify-center border-blue-500/80 text-blue-500 hover:border-blue-500 hover:bg-blue-500/10 hover:text-blue-400"
+                    variant="secondary"
+                    className="w-56 justify-center"
                 >
-                    Set budget For this month
+                    SET BUDGET
                 </Button>
             </AlertDialogTrigger>
             <AlertDialogContent className="max-w-md">

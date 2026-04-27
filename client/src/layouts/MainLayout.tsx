@@ -6,6 +6,7 @@ import { ModeToggle } from "@/components/mode-toggle"
 import { Bell, CircleUser } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import TopBarActionsForCreditCard from '@/features/credit_card/components/TopBarActionsForCreditCard'
+import SynchronizeCC from '@/components/SynchronizeCC'
 
 export default function MainLayout() {
     const location = useLocation()
@@ -18,6 +19,7 @@ export default function MainLayout() {
                 <div className="flex flex-col flex-1 overflow-hidden">
                     <header className="flex min-h-14 items-center gap-2 border-b px-4 py-2">
                         <SidebarTrigger />
+                        <SynchronizeCC />
                         {isCreditCardPage && <TopBarActionsForCreditCard />}
                         <div className="ml-auto flex items-center gap-1">
                             <Button variant="ghost" size="icon">
