@@ -17,32 +17,24 @@ export default function TopBarActionsForCreditCard() {
     const dispatch = useDispatch();
     return (
         <div className="flex flex-wrap items-center gap-3">
-            <Button
-                variant="outline"
-                className="w-56 justify-center border-red-500/80 text-red-500 hover:border-red-500 hover:bg-red-500/10 hover:text-red-400"
-            >
-                Synchronize
-            </Button>
-
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button
                         variant="outline"
-                        className="w-56 justify-between border-emerald-500/80 text-emerald-500 hover:border-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-400"
+                        className="w-56 justify-center"
                     >
                         {bank}
                         <ChevronDown className="size-4" />
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
+                <DropdownMenuContent align="center">
                     {BANK_OPTIONS.map((bankOption) => (
-                        <DropdownMenuItem key={bankOption} onClick={() => dispatch(setBank(bankOption))}>
+                        <DropdownMenuItem className="justify-center" key={bankOption} onClick={() => dispatch(setBank(bankOption))}>
                             {bankOption}
                         </DropdownMenuItem>
                     ))}
                 </DropdownMenuContent>
             </DropdownMenu>
-
             <SetBudget />
         </div >
     )
