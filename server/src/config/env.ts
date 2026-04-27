@@ -44,6 +44,10 @@ const envSchema = z.object({
 
   // Security
   BCRYPT_SALT_ROUNDS: z.coerce.number().min(10).max(20).default(12),
+
+  // ICICI auto sync
+  ICICI_USER_ID: z.string().optional(),
+  ICICI_PASSWORD: z.string().optional(),
 });
 
 // Type inference from schema
@@ -54,7 +58,12 @@ let env: Env;
 
 try {
   env = envSchema.parse(process.env);
-  console.table(env); // Log the validated environment variables for debugging
+  console.table({
+    ...env,
+    JWT_SECRET: env.JWT_SECRET ? "[redacted]" : undefined,
+    ICICI_USER_ID: env.ICICI_USER_ID ? "[redacted]" : undefined,
+    ICICI_PASSWORD: env.ICICI_PASSWORD ? "[redacted]" : undefined,
+  }); // Log the validated environment variables for debugging
 } catch (error) {
   if (error instanceof z.ZodError) {
     const errorMessages = error.issues.map(

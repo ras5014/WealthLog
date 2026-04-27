@@ -5,6 +5,7 @@ import {
   extractTransactionsFromPDF,
   getAllLatestTransactions,
 } from "./creditCard.service.ts";
+import { autoSyncIciciStatements } from "./iciciAutoSync.service.ts";
 import db from "../../db/connection.ts";
 import { creditCardBankInfo, creditCardInfo } from "../../db/schema.ts";
 import { AppError } from "../../middlewares/errorHandler.ts";
@@ -69,4 +70,28 @@ export const setCreditInfo = async (req: Request, res: Response) => {
 export const getCreditCardBankDetails = async (req: Request, res: Response) => {
   const result = await db.select().from(creditCardBankInfo);
   res.status(200).json(result);
+};
+
+export const autoSync_ICICIStatements = async (req: Request, res: Response) => {
+  try {
+    const result = await autoSyncIciciStatements({
+      autoLogin: req.body?.autoLogin === true,
+    });
+    res.status(200).json(result);
+  } catch (error) {
+    console.error(error);
+
+    if (error instanceof Error && error.message.includes("already running")) {
+      throw new AppError(error.message, 409);
+    }
+
+    if (
+      error instanceof Error &&
+      error.message.includes("ICICI auto login is enabled")
+    ) {
+      throw new AppError(error.message, 400);
+    }
+
+    throw new AppError("Failed to auto sync ICICI statements", 500);
+  }
 };

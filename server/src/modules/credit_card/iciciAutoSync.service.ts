@@ -1,0 +1,181 @@
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { PDFParse } from "pdf-parse";
+import { chromium, type Download, type Page } from "playwright";
+import { env } from "../../config/env.ts";
+import { extractTransactionsFromPDF } from "./creditCard.service.ts";
+import type { ParsedStatementResult } from "./creditCard.types.ts";
+
+const ICICI_LOGIN_URL = "https://retailnetbanking.icici.bank.in/login-page";
+const MANUAL_DOWNLOAD_TIMEOUT_MS = 15 * 60 * 1000;
+const EXPECTED_STATEMENT_DOWNLOADS = 2;
+
+type DownloadedStatement = {
+  card: "coral" | "amazon-pay";
+  filePath: string;
+};
+
+type ProcessedStatement = {
+  card: DownloadedStatement["card"];
+  result: ParsedStatementResult;
+};
+
+type AutoSyncIciciOptions = {
+  autoLogin?: boolean;
+};
+
+let isRunning = false;
+
+const inferCardFromFilename = (
+  filename: string,
+): DownloadedStatement["card"] => {
+  const lowerFilename = filename.toLowerCase();
+
+  return lowerFilename.includes("amazon") || lowerFilename.includes("3005")
+    ? "amazon-pay"
+    : "coral";
+};
+
+const saveManualStatementDownload = async (
+  download: Download,
+  runDownloadDir: string,
+  index: number,
+): Promise<DownloadedStatement> => {
+  const suggestedFilename = download.suggestedFilename();
+  const safeFilename =
+    suggestedFilename.replaceAll(/[^a-z0-9._-]+/gi, "-") ||
+    `icici-statement-${index}.pdf`;
+  const filePath = path.join(runDownloadDir, `${index}-${safeFilename}`);
+
+  await download.saveAs(filePath);
+
+  return {
+    card: inferCardFromFilename(suggestedFilename),
+    filePath,
+  };
+};
+
+const waitForManualStatementDownloads = async (
+  page: Page,
+  runDownloadDir: string,
+): Promise<DownloadedStatement[]> => {
+  const downloadedStatements: DownloadedStatement[] = [];
+  const startedAt = Date.now();
+
+  while (downloadedStatements.length < EXPECTED_STATEMENT_DOWNLOADS) {
+    const remainingMs = MANUAL_DOWNLOAD_TIMEOUT_MS - (Date.now() - startedAt);
+
+    if (remainingMs <= 0) {
+      throw new Error(
+        `Timed out waiting for ${EXPECTED_STATEMENT_DOWNLOADS} ICICI statement downloads. Captured ${downloadedStatements.length}.`,
+      );
+    }
+
+    const download = await page.waitForEvent("download", {
+      timeout: remainingMs,
+    });
+
+    downloadedStatements.push(
+      await saveManualStatementDownload(
+        download,
+        runDownloadDir,
+        downloadedStatements.length + 1,
+      ),
+    );
+  }
+
+  return downloadedStatements;
+};
+
+const autoLoginIcici = async (page: Page) => {
+  if (!env.ICICI_USER_ID || !env.ICICI_PASSWORD) {
+    throw new Error(
+      "ICICI auto login is enabled, but ICICI_USER_ID or ICICI_PASSWORD is missing.",
+    );
+  }
+
+  const userIdInput = page.getByLabel("User ID", { exact: true });
+  await userIdInput.fill(env.ICICI_USER_ID);
+
+  const passwordInput = page.getByLabel("Password", { exact: true });
+  await passwordInput.fill(env.ICICI_PASSWORD);
+
+  await page
+    .getByRole("button", { name: /^Login$/ })
+    .last()
+    .click();
+  await page.waitForLoadState("domcontentloaded").catch(() => undefined);
+};
+
+const processDownloadedStatement = async (
+  statement: DownloadedStatement,
+): Promise<ProcessedStatement> => {
+  const fileBuffer = await readFile(statement.filePath);
+  const parser = new PDFParse({ data: fileBuffer });
+
+  try {
+    const pdfData = await parser.getText();
+    const result = await extractTransactionsFromPDF(pdfData.text);
+
+    return {
+      card: statement.card,
+      result,
+    };
+  } finally {
+    await parser.destroy();
+  }
+};
+
+export const autoSyncIciciStatements = async (
+  options: AutoSyncIciciOptions = {},
+) => {
+  if (isRunning) {
+    throw new Error("ICICI auto sync is already running.");
+  }
+
+  isRunning = true;
+  const runDownloadDir = await mkdtemp(
+    path.join(tmpdir(), "wealthlog-icici-statements-"),
+  );
+  const browser = await chromium.launch({
+    headless: false,
+    args: ["--start-maximized"],
+  });
+
+  try {
+    const context = await browser.newContext({
+      acceptDownloads: true,
+      viewport: null,
+    });
+    const page = await context.newPage();
+
+    await page.goto(ICICI_LOGIN_URL, { waitUntil: "domcontentloaded" });
+    if (options.autoLogin) {
+      await autoLoginIcici(page);
+    }
+
+    // Temp
+    // await page.locator('a:has-text("Cards")').click();
+
+    const downloadedStatements = await waitForManualStatementDownloads(
+      page,
+      runDownloadDir,
+    );
+
+    const processedStatements: ProcessedStatement[] = [];
+    for (const statement of downloadedStatements) {
+      processedStatements.push(await processDownloadedStatement(statement));
+    }
+
+    return {
+      statements: processedStatements,
+    };
+  } finally {
+    await browser.close().catch(() => undefined);
+    await rm(runDownloadDir, { recursive: true, force: true }).catch(
+      () => undefined,
+    );
+    isRunning = false;
+  }
+};
