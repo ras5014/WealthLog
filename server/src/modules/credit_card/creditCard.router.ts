@@ -6,6 +6,7 @@ import {
   getCreditInfo,
   setCreditInfo,
   getCreditCardBankDetails,
+  autoSync_ICICIStatements,
 } from "./creditCard.controller.ts";
 import { validateBody } from "../../middlewares/validation.ts";
 import { CreditCardInfoInsertSchema } from "../../db/schema.ts";
@@ -20,6 +21,7 @@ router.post(
 );
 
 router.get("/get-transactions", getTransactions);
+router.post("/auto-sync-icici", autoSync_ICICIStatements);
 router.get("/credit-info", getCreditInfo).post(
   "/credit-info",
   // validateBody(CreditCardInfoInsertSchema),
