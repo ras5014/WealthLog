@@ -2,10 +2,11 @@ import { Input } from "@/components/ui/input";
 import { useSynchronizeEmi, useAutoSyncEmi } from "../hooks/useSynchronizeEmi";
 import { ACCEPTED_TYPES, emiStatementSchema, type EmiStatementFormValues } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { Bot } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const EMI_BANK_OPTIONS = ["ICICI_CORAL", "ICICI_AMZNPAY"] as const;
 
@@ -21,6 +22,7 @@ export default function EmiSyncForm({ setOpen }: { readonly setOpen: (open: bool
         handleSubmit,
         reset,
         watch,
+        control,
         formState: { errors },
     } = useForm<EmiStatementFormValues>({
         resolver: zodResolver(emiStatementSchema),
@@ -53,7 +55,7 @@ export default function EmiSyncForm({ setOpen }: { readonly setOpen: (open: bool
                             EMI amortization schedule PDFs. WealthLog will capture and synchronize them.
                         </p>
                         <label className="flex items-center gap-2 pt-1 text-sm">
-                            <input
+                            <Input
                                 type="checkbox"
                                 className="size-4 rounded border-input accent-primary"
                                 checked={autoLogin}
@@ -77,18 +79,28 @@ export default function EmiSyncForm({ setOpen }: { readonly setOpen: (open: bool
 
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:mt-4">
                     <label htmlFor="emiBank" className="text-sm font-medium sm:w-32 sm:shrink-0">Bank</label>
-                    <select
-                        id="emiBank"
-                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                        {...register("bank")}
-                        disabled={isSyncing}
-                    >
-                        {EMI_BANK_OPTIONS.map((option) => (
-                            <option key={option} value={option}>
-                                {option}
-                            </option>
-                        ))}
-                    </select>
+                    <Controller
+                        name="bank"
+                        control={control}
+                        render={({ field }) => (
+                            <Select
+                                value={field.value}
+                                onValueChange={field.onChange}
+                                disabled={isSyncing}
+                            >
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Select bank" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {EMI_BANK_OPTIONS.map((option) => (
+                                        <SelectItem key={option} value={option}>
+                                            {option}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
+                    />
                 </div>
 
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:mt-4">
