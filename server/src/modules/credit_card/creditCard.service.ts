@@ -25,6 +25,11 @@ export const extractTransactionsFromPDF = async (
     .trim();
   const cardNumber = cardDetailsMatch[2];
 
+  const bank = CARD_DETAILS.find((c) => c.cardNumber === cardNumber)?.bank;
+  if (!bank) {
+    throw new Error(`Bank not found for card number: ${cardNumber}`);
+  }
+
   // 2. Extract statement period
   const periodRegex =
     /Statement Period\s+(\d{2}-\d{2}-\d{4})\s+TO\s+(\d{2}-\d{2}-\d{4})/;
@@ -95,9 +100,7 @@ export const extractTransactionsFromPDF = async (
       referenceNumber: match[5],
       statementStartDate,
       statementEndDate,
-      bank:
-        CARD_DETAILS.find((c) => c.cardNumber === cardNumber)?.bank ||
-        "UNKNOWN",
+      bank,
     });
   }
 
@@ -123,8 +126,6 @@ export const extractTransactionsFromPDF = async (
     (t) => !existingRefs.has(t.referenceNumber),
   );
   const duplicateCount = allTransactions.length - newTransactions.length;
-  const bank =
-    CARD_DETAILS.find((c) => c.cardNumber === cardNumber)?.bank || "UNKNOWN";
 
   // 8. Persist new transactions to the database
   if (newTransactions.length > 0) {
@@ -148,6 +149,7 @@ export const extractTransactionsFromPDF = async (
     totalAmountDue: totalAmountDue.toString(),
     billingCycleStartDate: statementStartDate.split("-").reverse().join("-"),
     billingCycleEndDate: billingEndDateStr,
+    statementEndDate: statementEndDate.split("-").reverse().join("-"),
   };
 
   const existingBankInfo = await db.query.creditCardBankInfo.findFirst({
@@ -161,6 +163,7 @@ export const extractTransactionsFromPDF = async (
         totalAmountDue: bankInfoPayload.totalAmountDue,
         billingCycleStartDate: bankInfoPayload.billingCycleStartDate,
         billingCycleEndDate: bankInfoPayload.billingCycleEndDate,
+        statementEndDate: bankInfoPayload.statementEndDate,
       })
       .where(eq(creditCardBankInfo.bank, existingBankInfo.bank));
   } else {

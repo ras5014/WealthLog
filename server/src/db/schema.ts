@@ -46,6 +46,7 @@ export const creditCardBankInfo = pgTable("credit_card_bank_info", {
   }).notNull(),
   billingCycleStartDate: date("billing_cycle_start_date").notNull(),
   billingCycleEndDate: date("billing_cycle_end_date").notNull(),
+  statementEndDate: date("statement_end_date").notNull(),
 });
 
 export const emiInfo = pgTable("emi_info", {
