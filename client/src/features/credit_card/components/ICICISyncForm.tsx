@@ -3,9 +3,9 @@ import { useSynchronizeIcici, useAutoSyncIcici } from "@/features/credit_card/ho
 import { ACCEPTED_TYPES, statementSchema, type StatementFormValues } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Button } from "./ui/button";
 import { Bot } from "lucide-react";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 export default function ICICISyncForm({ setOpen }: { readonly setOpen: (open: boolean) => void }) {
     const [autoLogin, setAutoLogin] = useState(false);
@@ -54,7 +54,7 @@ export default function ICICISyncForm({ setOpen }: { readonly setOpen: (open: bo
                                 onChange={(event) => setAutoLogin(event.target.checked)}
                                 disabled={isSyncing}
                             />
-                            Auto login with saved ICICI credentials
+                            <span>Auto login with saved ICICI credentials</span>
                         </label>
                     </div>
                     <Button

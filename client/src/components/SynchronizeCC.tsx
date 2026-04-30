@@ -8,10 +8,10 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import ICICISyncForm from "@/features/credit_card/components/ICICISyncForm";
 import type { RootState } from "@/lib/store";
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import ICICISyncForm from "./ICICISyncForm";
 
 
 export default function SynchronizeCC() {
@@ -37,6 +37,7 @@ export default function SynchronizeCC() {
                 </AlertDialogHeader>
 
                 <ICICISyncForm setOpen={setOpen} />
+
                 <AlertDialogFooter>
                     <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
                 </AlertDialogFooter>
