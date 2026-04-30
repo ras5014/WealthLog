@@ -120,41 +120,34 @@ export default function SynchronizeCC() {
                                 {autoSyncIcici.isPending ? "Running..." : "Start Auto Sync"}
                             </Button>
                         </div>
-                    </div>
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                        <label className="text-sm font-medium sm:w-32 sm:shrink-0">ICICI Statements</label>
-                        <div className="min-w-0 flex-1">
-                            <Input
-                                type="file"
-                                accept={ACCEPTED_TYPES.join(",")}
-                                multiple
-                                {...register("iciStatement")}
-                            />
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center mt-4">
+                            <label className="text-sm font-medium sm:w-32 sm:shrink-0">ICICI Statements</label>
+                            <div className="min-w-0 flex-1">
+                                <Input
+                                    type="file"
+                                    accept={ACCEPTED_TYPES.join(",")}
+                                    multiple
+                                    {...register("iciStatement")}
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2 sm:flex-row sm:shrink-0">
+                                <Button type="submit" disabled={isSyncing}>
+                                    {synchronizeIcici.isPending ? "Synchronizing..." : "Synchronize"}
+                                </Button>
+                            </div>
                         </div>
-                        <div className="flex flex-col gap-2 sm:flex-row sm:shrink-0">
-                            <Button type="submit" disabled={isSyncing}>
-                                {synchronizeIcici.isPending ? "Synchronizing..." : "Synchronize"}
-                            </Button>
-                            <Button type="button" variant="outline" onClick={handleAutoSync} disabled={isSyncing}>
-                                {autoSyncIcici.isPending ? (
-                                    <Bot className="size-4" />
-                                ) : (
-                                    <ExternalLink className="size-4" />
-                                )}
-                                {autoSyncIcici.isPending ? "Running..." : "Auto Sync"}
-                            </Button>
+                        <div className="min-h-4 sm:ml-32">
+                            {selectedFiles.length > 0 && (
+                                <p className="text-xs text-muted-foreground truncate">
+                                    {selectedFiles.map((file) => file.name).join(", ")}
+                                </p>
+                            )}
+                            {errors.iciStatement && (
+                                <p className="text-xs text-destructive">{errors.iciStatement.message}</p>
+                            )}
                         </div>
                     </div>
-                    <div className="min-h-4 sm:ml-32">
-                        {selectedFiles.length > 0 && (
-                            <p className="text-xs text-muted-foreground truncate">
-                                {selectedFiles.map((file) => file.name).join(", ")}
-                            </p>
-                        )}
-                        {errors.iciStatement && (
-                            <p className="text-xs text-destructive">{errors.iciStatement.message}</p>
-                        )}
-                    </div>
+
                 </form>
                 <AlertDialogFooter>
                     <AlertDialogCancel type="button" disabled={isSyncing}>Cancel</AlertDialogCancel>
