@@ -9,13 +9,16 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import ICICISyncForm from "@/features/credit_card/components/ICICISyncForm";
+import EmiSyncForm from "@/features/emis/components/EmiSyncForm";
 import type { RootState } from "@/lib/store";
 import { useState } from "react";
 import { useSelector } from "react-redux";
+import { useLocation } from "react-router";
 
 
 export default function SynchronizeCC() {
     const [open, setOpen] = useState(false);
+    const location = useLocation();
     const billingCycleEndDate = useSelector((state: RootState) => state.creditCard.billingCycleEndDate);
     const today = new Date();
     const isNotToday = billingCycleEndDate
@@ -36,7 +39,8 @@ export default function SynchronizeCC() {
                     <AlertDialogTitle>Synchronize Banks</AlertDialogTitle>
                 </AlertDialogHeader>
 
-                <ICICISyncForm setOpen={setOpen} />
+                {location.pathname === "/credit-card" && <ICICISyncForm setOpen={setOpen} />}
+                {location.pathname === "/emis" && <EmiSyncForm setOpen={setOpen} />}
 
                 <AlertDialogFooter>
                     <AlertDialogCancel type="button">Cancel</AlertDialogCancel>

@@ -5,6 +5,7 @@ import {
   getEmiDashboard,
   getEmiInfo,
   synchronizeEMI_ICICI,
+  autoSync_EMI_ICICI,
 } from "./emi.controller.ts";
 
 const router = Router();
@@ -15,6 +16,8 @@ router.post(
   upload.single("file"),
   synchronizeEMI_ICICI,
 );
+
+router.post("/auto-sync-emi-icici", autoSync_EMI_ICICI);
 
 // TODO: Use with Transaction table "Add to EMI" button
 router.post("/add-to-emi", addToEMI);

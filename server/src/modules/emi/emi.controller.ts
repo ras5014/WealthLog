@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm/sql/expressions/conditions";
 import { readFile, unlink } from "fs/promises";
 import { PDFParse } from "pdf-parse";
 import { extractEmisFromPDF, getEmiDashboardData } from "./emi.service.ts";
+import { autoSyncEmiStatements } from "./emiAutoSync.service.ts";
 import { AppError } from "../../middlewares/errorHandler.ts";
 
 export const addToEMI = async (req: Request, res: Response) => {
@@ -51,5 +52,41 @@ export const synchronizeEMI_ICICI = async (req: Request, res: Response) => {
   } finally {
     await parser.destroy();
     await unlink(filePath).catch(() => undefined);
+  }
+};
+
+export const autoSync_EMI_ICICI = async (req: Request, res: Response) => {
+  try {
+    const { autoLogin, bank, expectedDownloads } = req.body;
+
+    if (!bank) {
+      throw new AppError("Bank is required for EMI auto sync", 400);
+    }
+
+    const result = await autoSyncEmiStatements({
+      autoLogin: autoLogin === true,
+      bank,
+      expectedDownloads,
+    });
+    res.status(200).json(result);
+  } catch (error) {
+    console.error(error);
+
+    if (error instanceof AppError) {
+      throw error;
+    }
+
+    if (error instanceof Error && error.message.includes("already running")) {
+      throw new AppError(error.message, 409);
+    }
+
+    if (
+      error instanceof Error &&
+      error.message.includes("ICICI auto login is enabled")
+    ) {
+      throw new AppError(error.message, 400);
+    }
+
+    throw new AppError("Failed to auto sync EMI statements", 500);
   }
 };
