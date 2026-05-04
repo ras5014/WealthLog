@@ -41,3 +41,9 @@ export type BankDetailSchema = {
   billingCycleStartDate: string;
   billingCycleEndDate: string;
 };
+
+export type AddToEMIType = {
+  bank: string;
+  referenceNumber: string;
+  statementStartDate: string;
+};

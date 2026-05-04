@@ -9,7 +9,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
-import { useEmiInfo } from "@/hooks/useEmi";
+import { useEmiInfo } from "@/features/emis/hooks/useEmi";
 import type { EmiInfoItem } from "../type";
 
 function AmortizationTable({ emi }: { emi: EmiInfoItem }) {

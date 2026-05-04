@@ -9,7 +9,7 @@ import { useEffect } from "react";
 import type { RootState } from "@/lib/store";
 import { BANK_OPTIONS } from "@/lib/constants";
 import type { BankDetailSchema, CreditCardTransaction } from "./types";
-import { useEmiInfo } from "@/hooks/useEmi"
+import { useEmiInfo } from "@/features/emis/hooks/useEmi"
 import { useBankDetails } from "./hooks/useBankDetails";
 import { setBillingCycleEndDate } from "./creditCardSlice";
 
