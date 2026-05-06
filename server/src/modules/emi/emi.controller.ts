@@ -1,7 +1,12 @@
 import type { Request, Response } from "express";
 import { db } from "../../db/connection.ts";
-import { creditCardTransactions, emiInfo } from "../../db/schema.ts";
+import {
+  creditCardTransactions,
+  emiInfo,
+  tempEmiRecords,
+} from "../../db/schema.ts";
 import { eq } from "drizzle-orm/sql/expressions/conditions";
+import { and } from "drizzle-orm";
 import { readFile, unlink } from "fs/promises";
 import { PDFParse } from "pdf-parse";
 import { extractEmisFromPDF, getEmiDashboardData } from "./emi.service.ts";
@@ -10,14 +15,19 @@ import { AppError } from "../../middlewares/errorHandler.ts";
 
 export const addToEMI = async (req: Request, res: Response) => {
   const { bank, referenceNumber, statementStartDate } = req.body;
+  // Delete the transaction from transactions table and return the deleted row
   const row = await db
     .delete(creditCardTransactions)
     .where(
-      eq(creditCardTransactions.bank, bank) &&
-        eq(creditCardTransactions.referenceNumber, referenceNumber) &&
+      and(
+        eq(creditCardTransactions.bank, bank),
+        eq(creditCardTransactions.referenceNumber, referenceNumber),
         eq(creditCardTransactions.statementStartDate, statementStartDate),
+      ),
     )
     .returning();
+  // Add the deleted row to temp emi table
+  await db.insert(tempEmiRecords).values(row);
   res
     .status(200)
     .json({ message: "Transaction added to EMI successfully", row });

@@ -79,6 +79,15 @@ export const emiRecords = pgTable("emi_records", {
   >(),
 });
 
+export const tempEmiRecords = pgTable("temp_emi_records", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  bank: varchar("bank", { length: 64 }).notNull(),
+  referenceNumber: varchar("reference_number", { length: 64 }).notNull(),
+  statementStartDate: date("statement_start_date").notNull(),
+  details: varchar("details", { length: 512 }).notNull(),
+  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+});
+
 // Zod Schemas for validation
 export const CreditCardTransactionInsertSchema = createInsertSchema(
   creditCardTransactions,
@@ -101,3 +110,6 @@ export const EmiInfoSelectSchema = createSelectSchema(emiInfo);
 
 export const EmiRecordsInsertSchema = createInsertSchema(emiRecords);
 export const EmiRecordsSelectSchema = createSelectSchema(emiRecords);
+
+export const TempEmiRecordsInsertSchema = createInsertSchema(tempEmiRecords);
+export const TempEmiRecordsSelectSchema = createSelectSchema(tempEmiRecords);
