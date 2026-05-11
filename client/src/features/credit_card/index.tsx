@@ -5,10 +5,11 @@ import CreditInfo from "./components/CreditInfo";
 import { DataTable } from "./components/transaction_table/data-table";
 import { columns } from "./components/transaction_table/columns";
 import { useSelector, useDispatch } from "react-redux";
+import { useEffect } from "react";
 import type { RootState } from "@/lib/store";
 import { BANK_OPTIONS } from "@/lib/constants";
 import type { BankDetailSchema, CreditCardTransaction } from "./types";
-import { useEmiInfo } from "@/hooks/useEmi"
+import { useEmiInfo } from "@/features/emis/hooks/useEmi"
 import { useBankDetails } from "./hooks/useBankDetails";
 import { setBillingCycleEndDate } from "./creditCardSlice";
 
@@ -21,10 +22,13 @@ export default function Index() {
 
     // Calculations
     const currentBillingCycle = transactions?.[0];
-    const billingCycleEndDate = currentBillingCycle?.billingCycleEndDate;
-    if (billingCycleEndDate) {
-        dispatch(setBillingCycleEndDate(billingCycleEndDate));
-    }
+    const billingCycleEndDate = currentBillingCycle?.statementEndDate;
+
+    useEffect(() => {
+        if (billingCycleEndDate) {
+            dispatch(setBillingCycleEndDate(billingCycleEndDate));
+        }
+    }, [billingCycleEndDate, dispatch]);
 
     const normalizeBankName = (value: string) =>
         value.trim().replaceAll("_", " ").replace(/\s+/g, " ").toUpperCase();

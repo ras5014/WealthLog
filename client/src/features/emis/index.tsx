@@ -1,7 +1,7 @@
 import { EmiForecasting } from "./components/EmiForecasting";
 import EMITable from "./components/EMITable";
 import TotalLoan from "./components/TotalLoan";
-import { useEmiDashboard } from "../../hooks/useEmi";
+import { useEmiDashboard } from "./hooks/useEmi";
 
 
 export default function Index() {

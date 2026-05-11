@@ -3,7 +3,11 @@ import type {
   ParsedStatementResult,
 } from "./creditCard.types.ts";
 import db from "../../db/connection.ts";
-import { creditCardBankInfo, creditCardTransactions } from "../../db/schema.ts";
+import {
+  creditCardBankInfo,
+  creditCardTransactions,
+  tempEmiRecords,
+} from "../../db/schema.ts";
 import { and, eq, inArray } from "drizzle-orm";
 import { PREFIXES_TO_EXCLUDE, CARD_DETAILS } from "../../config/constants.ts";
 import { calculateBillingCycleDates } from "../../lib/utils.ts";
@@ -24,6 +28,11 @@ export const extractTransactionsFromPDF = async (
     .replaceAll(/\s+/g, " ")
     .trim();
   const cardNumber = cardDetailsMatch[2];
+
+  const bank = CARD_DETAILS.find((c) => c.cardNumber === cardNumber)?.bank;
+  if (!bank) {
+    throw new Error(`Bank not found for card number: ${cardNumber}`);
+  }
 
   // 2. Extract statement period
   const periodRegex =
@@ -95,36 +104,58 @@ export const extractTransactionsFromPDF = async (
       referenceNumber: match[5],
       statementStartDate,
       statementEndDate,
-      bank:
-        CARD_DETAILS.find((c) => c.cardNumber === cardNumber)?.bank ||
-        "UNKNOWN",
+      bank,
     });
   }
 
   // 7. Deduplicate against existing DB records for this statement period
   const refNumbers = allTransactions.map((t) => t.referenceNumber);
+  const normalizedStatementStartDate = statementStartDate
+    .split("-")
+    .reverse()
+    .join("-");
 
-  const existingRows = await db
-    .select({ referenceNumber: creditCardTransactions.referenceNumber })
-    .from(creditCardTransactions)
-    .where(
-      and(
-        eq(
-          creditCardTransactions.statementStartDate,
-          statementStartDate.split("-").reverse().join("-"),
-        ),
-        inArray(creditCardTransactions.referenceNumber, refNumbers),
-      ),
-    );
+  // If transaction exists in tempEmiRecords, it means it's added to EMI, so we should exclude it from new transactions and not count it as duplicate
+  const emiRows = refNumbers.length
+    ? await db
+        .select({ referenceNumber: tempEmiRecords.referenceNumber })
+        .from(tempEmiRecords)
+        .where(
+          and(
+            eq(tempEmiRecords.bank, bank),
+            eq(tempEmiRecords.statementStartDate, normalizedStatementStartDate),
+            inArray(tempEmiRecords.referenceNumber, refNumbers),
+          ),
+        )
+    : [];
+
+  const emiRefs = new Set(emiRows.map((r) => r.referenceNumber));
+  const transactionsForDedup = allTransactions.filter(
+    (t) => !emiRefs.has(t.referenceNumber),
+  );
+  const refsForDedup = transactionsForDedup.map((t) => t.referenceNumber);
+
+  const existingRows = refsForDedup.length
+    ? await db
+        .select({ referenceNumber: creditCardTransactions.referenceNumber })
+        .from(creditCardTransactions)
+        .where(
+          and(
+            eq(
+              creditCardTransactions.statementStartDate,
+              normalizedStatementStartDate,
+            ),
+            inArray(creditCardTransactions.referenceNumber, refsForDedup),
+          ),
+        )
+    : [];
 
   const existingRefs = new Set(existingRows.map((r) => r.referenceNumber));
 
-  const newTransactions = allTransactions.filter(
+  const newTransactions = transactionsForDedup.filter(
     (t) => !existingRefs.has(t.referenceNumber),
   );
-  const duplicateCount = allTransactions.length - newTransactions.length;
-  const bank =
-    CARD_DETAILS.find((c) => c.cardNumber === cardNumber)?.bank || "UNKNOWN";
+  const duplicateCount = transactionsForDedup.length - newTransactions.length;
 
   // 8. Persist new transactions to the database
   if (newTransactions.length > 0) {
@@ -148,6 +179,7 @@ export const extractTransactionsFromPDF = async (
     totalAmountDue: totalAmountDue.toString(),
     billingCycleStartDate: statementStartDate.split("-").reverse().join("-"),
     billingCycleEndDate: billingEndDateStr,
+    statementEndDate: statementEndDate.split("-").reverse().join("-"),
   };
 
   const existingBankInfo = await db.query.creditCardBankInfo.findFirst({
@@ -161,6 +193,7 @@ export const extractTransactionsFromPDF = async (
         totalAmountDue: bankInfoPayload.totalAmountDue,
         billingCycleStartDate: bankInfoPayload.billingCycleStartDate,
         billingCycleEndDate: bankInfoPayload.billingCycleEndDate,
+        statementEndDate: bankInfoPayload.statementEndDate,
       })
       .where(eq(creditCardBankInfo.bank, existingBankInfo.bank));
   } else {

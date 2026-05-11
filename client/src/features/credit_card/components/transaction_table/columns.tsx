@@ -13,6 +13,54 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { useAddToEMI } from "../../hooks/useAddToEMI"
+
+const ActionsCell = ({ transaction }: { transaction: CreditCardTransaction }) => {
+    const addToEMIMutation = useAddToEMI();
+    return (
+        <div className="flex w-full justify-center">
+            <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                        Add to EMI
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Add to EMI</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to add this transaction to EMI?
+                            <br />
+                            <strong>{transaction.details}</strong> -{" "}
+                            {new Intl.NumberFormat("en-IN", {
+                                style: "currency",
+                                currency: "INR",
+                            }).format(Number(transaction.amount))}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => {
+                                console.log("Adding to EMI:", transaction);
+                                // Call the mutation function to add to EMI
+                                // You can pass the necessary data from the transaction object
+                                // For example:
+                                addToEMIMutation.mutate({
+                                    bank: transaction.bank,
+                                    referenceNumber: transaction.referenceNumber,
+                                    statementStartDate: transaction.statementStartDate,
+                                });
+                            }}
+                        >
+                            Confirm
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </div>
+    );
+}
 
 export type Payment = CreditCardTransaction
 
@@ -29,6 +77,7 @@ const formatDate = (value: string) =>
         month: "short",
         year: "numeric",
     }).format(new Date(value))
+
 
 export const columns: ColumnDef<CreditCardTransaction>[] = [
     {
@@ -112,43 +161,6 @@ export const columns: ColumnDef<CreditCardTransaction>[] = [
     {
         id: "actions",
         header: () => <div className="text-center">Actions</div>,
-        cell: ({ row }) => {
-            const transaction = row.original;
-            return (
-                <div className="flex w-full justify-center">
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="sm">
-                                Add to EMI
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Add to EMI</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Are you sure you want to add this transaction to EMI?
-                                    <br />
-                                    <strong>{transaction.details}</strong> -{" "}
-                                    {new Intl.NumberFormat("en-IN", {
-                                        style: "currency",
-                                        currency: "INR",
-                                    }).format(Number(transaction.amount))}
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                    onClick={() => {
-                                        console.log("Adding to EMI:", transaction);
-                                    }}
-                                >
-                                    Confirm
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </div>
-            );
-        },
+        cell: ({ row }) => <ActionsCell transaction={row.original} />,
     },
 ]
