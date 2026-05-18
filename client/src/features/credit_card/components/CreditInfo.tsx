@@ -78,7 +78,7 @@ export default function CreditInfo(props: Readonly<TotalSpentProps>) {
             month: "short",
             year: "numeric",
         }).format(dueDateValue)
-        : "Not available"
+        : "N/A";
 
     const isUp = trend > 0
     const TrendIcon = isUp ? ArrowUpRight : ArrowDownRight

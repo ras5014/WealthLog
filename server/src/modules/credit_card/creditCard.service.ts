@@ -46,7 +46,8 @@ export const extractTransactionsFromPDF = async (
       .trim() ?? "";
   const cardNumber = selectedCardDetails?.cardNumber ?? cardDetailsMatch![2];
   const matchedCardDetails =
-    selectedCardDetails ?? CARD_DETAILS.find((c) => c.cardNumber === cardNumber);
+    selectedCardDetails ??
+    CARD_DETAILS.find((c) => c.cardNumber === cardNumber);
   if (!matchedCardDetails?.bank) {
     throw new Error(`Bank not found for card number: ${cardNumber}`);
   }
@@ -216,6 +217,10 @@ export const extractTransactionsFromPDF = async (
     billingCycleStartDate: statementStartDate.split("-").reverse().join("-"),
     billingCycleEndDate: billingEndDateStr,
     statementEndDate: statementEndDate.split("-").reverse().join("-"),
+    paymentDueDate: paymentDueDate
+      ? paymentDueDate.split("-").reverse().join("-")
+      : null,
+    minimumAmountDue: minimumAmountDue ? minimumAmountDue.toString() : null,
   };
 
   const existingBankInfo = await db.query.creditCardBankInfo.findFirst({
@@ -223,14 +228,22 @@ export const extractTransactionsFromPDF = async (
   });
 
   if (existingBankInfo) {
+    const bankInfoUpdatePayload = isPreviousMonthStatement
+      ? {
+          totalAmountDue: bankInfoPayload.totalAmountDue,
+          paymentDueDate: bankInfoPayload.paymentDueDate,
+          minimumAmountDue: bankInfoPayload.minimumAmountDue,
+        }
+      : {
+          totalAmountDue: bankInfoPayload.totalAmountDue,
+          billingCycleStartDate: bankInfoPayload.billingCycleStartDate,
+          billingCycleEndDate: bankInfoPayload.billingCycleEndDate,
+          statementEndDate: bankInfoPayload.statementEndDate,
+        };
+
     await db
       .update(creditCardBankInfo)
-      .set({
-        totalAmountDue: bankInfoPayload.totalAmountDue,
-        billingCycleStartDate: bankInfoPayload.billingCycleStartDate,
-        billingCycleEndDate: bankInfoPayload.billingCycleEndDate,
-        statementEndDate: bankInfoPayload.statementEndDate,
-      })
+      .set(bankInfoUpdatePayload)
       .where(eq(creditCardBankInfo.bank, existingBankInfo.bank));
   } else {
     await db.insert(creditCardBankInfo).values(bankInfoPayload);
@@ -252,7 +265,6 @@ export const extractTransactionsFromPDF = async (
 };
 
 export const getAllLatestTransactions = async () => {
-  // TODO: When adding banks other than ICICI, gotta use banks's billing cycle
   const billingCycleDates = await db.query.creditCardBankInfo.findMany({
     columns: {
       bank: true,

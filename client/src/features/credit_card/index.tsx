@@ -60,9 +60,11 @@ export default function Index() {
     const burnRatePerDay = totalDayPassedInCurrentCycle > 0 ? totalSpendsForSelectedBank / totalDayPassedInCurrentCycle : 0;
     // TODO: Get last month same time spend from backend/redis cache, Store last 6 months spending data on redis
     const lastMonthSameTimeSpend = 10000;
-    const dueDate = currentBillingCycle?.statementEndDate || "";
-
+    // const dueDate = currentBillingCycle?.statementEndDate || "";
     const { data: bankDetails } = useBankDetails();
+    const dueDate = bankDetails?.find((detail: BankDetailSchema) => normalizeBankName(detail.bank) === normalizeBankName(bank))?.paymentDueDate || "";
+
+
     // Get the EMIs
     const { data: emis, isPending: isEmiPending, isError: isEmiError } = useEmiInfo();
     // Calculate expected EMI for this billing cycle
