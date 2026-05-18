@@ -23,10 +23,16 @@ export const process_ICICIStatement = async (req: Request, res: Response) => {
     const pdfData = await parser.getText();
 
     // Here you would implement the logic to parse the PDF data and extract transactions
-    const result = await extractTransactionsFromPDF(pdfData.text);
+    const result = await extractTransactionsFromPDF(pdfData.text, req.body.bank);
     res.status(200).json(result);
   } catch (error) {
     console.error(error);
+    if (
+      error instanceof Error &&
+      error.message === "BANK_SELECTION_REQUIRED"
+    ) {
+      throw new AppError("BANK_SELECTION_REQUIRED", 400);
+    }
     throw new AppError("Failed to process PDF", 500);
   } finally {
     await parser.destroy();
