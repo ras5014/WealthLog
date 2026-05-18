@@ -35,6 +35,9 @@ const envSchema = z.object({
   // Database configuration
   DATABASE_URL: z.string().startsWith("postgresql://"),
 
+  // Redis configuration
+  REDIS_URL: z.string(),
+
   // JWT & Authentication
   JWT_SECRET: z
     .string()

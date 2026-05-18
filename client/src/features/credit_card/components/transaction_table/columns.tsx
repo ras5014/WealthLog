@@ -79,6 +79,14 @@ const formatDate = (value: string) =>
     }).format(new Date(value))
 
 
+const formatDetails = (details: string) => {
+    if (details.startsWith("UPI")) {
+        return details.split("-").pop()?.trim() ?? "";
+    }
+    return details;
+}
+
+
 export const columns: ColumnDef<CreditCardTransaction>[] = [
     {
         accessorKey: "transactionDate",
@@ -100,7 +108,7 @@ export const columns: ColumnDef<CreditCardTransaction>[] = [
         cell: ({ row }) => (
             <div className="min-w-72 max-w-xl">
                 <p className="truncate font-medium text-foreground">
-                    {row.original.details}
+                    {formatDetails(row.original.details)}
                 </p>
                 <p className="truncate text-xs uppercase tracking-[0.18em] text-muted-foreground">
                     {row.original.bank.replaceAll("_", " ")}
