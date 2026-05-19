@@ -14,25 +14,44 @@ import { calculateBillingCycleDates } from "../../lib/utils.ts";
 
 export const extractTransactionsFromPDF = async (
   pdfText: string,
+  selectedBank?: string,
 ): Promise<ParsedStatementResult> => {
+  const isPreviousMonthStatement = pdfText
+    .trimStart()
+    .startsWith("VIEW LAST STATEMENT");
+
+  if (isPreviousMonthStatement && !selectedBank) {
+    throw new Error("BANK_SELECTION_REQUIRED");
+  }
+
   // Extract Credit Card Information
   // 1. Extract card holder details
   const cardDetailsRegex =
     /My Credit Card Details for\s+([\s\S]*?)-(\d{6}\*{6}\d{4})/;
   const cardDetailsMatch = cardDetailsRegex.exec(pdfText);
-  if (!cardDetailsMatch) {
+  if (!cardDetailsMatch && !selectedBank) {
     throw new Error("Could not find card holder details in the PDF");
   }
-  const cardHolderName = cardDetailsMatch[1]
-    .replaceAll("\n", " ")
-    .replaceAll(/\s+/g, " ")
-    .trim();
-  const cardNumber = cardDetailsMatch[2];
+  const selectedCardDetails = selectedBank
+    ? CARD_DETAILS.find((c) => c.bank === selectedBank)
+    : undefined;
+  if (selectedBank && !selectedCardDetails) {
+    throw new Error(`Bank not found: ${selectedBank}`);
+  }
 
-  const bank = CARD_DETAILS.find((c) => c.cardNumber === cardNumber)?.bank;
-  if (!bank) {
+  const cardHolderName =
+    cardDetailsMatch?.[1]
+      .replaceAll("\n", " ")
+      .replaceAll(/\s+/g, " ")
+      .trim() ?? "";
+  const cardNumber = selectedCardDetails?.cardNumber ?? cardDetailsMatch![2];
+  const matchedCardDetails =
+    selectedCardDetails ??
+    CARD_DETAILS.find((c) => c.cardNumber === cardNumber);
+  if (!matchedCardDetails?.bank) {
     throw new Error(`Bank not found for card number: ${cardNumber}`);
   }
+  const bank = matchedCardDetails.bank;
 
   // 2. Extract statement period
   const periodRegex =
@@ -54,6 +73,24 @@ export const extractTransactionsFromPDF = async (
   const totalAmountDue = Number.parseFloat(
     totalDueMatch[1].replaceAll(",", ""),
   );
+
+  const paymentDueDateMatch = /Payment Due Date\s+(\d{2}-\d{2}-\d{4})/.exec(
+    pdfText,
+  );
+  const minimumAmountDueMatch =
+    /Minimum Amount Due\s+(?:INR\s+)?([\d,]+(?:\.\d{1,2})?)/.exec(pdfText);
+
+  if (isPreviousMonthStatement && !paymentDueDateMatch) {
+    throw new Error("Could not find Payment Due Date in the PDF");
+  }
+  if (isPreviousMonthStatement && !minimumAmountDueMatch) {
+    throw new Error("Could not find Minimum Amount Due in the PDF");
+  }
+
+  const paymentDueDate = paymentDueDateMatch?.[1];
+  const minimumAmountDue = minimumAmountDueMatch
+    ? Number.parseFloat(minimumAmountDueMatch[1].replaceAll(",", ""))
+    : undefined;
 
   // 3. Extract the transaction section (everything after the table header)
   const headerPattern =
@@ -180,6 +217,10 @@ export const extractTransactionsFromPDF = async (
     billingCycleStartDate: statementStartDate.split("-").reverse().join("-"),
     billingCycleEndDate: billingEndDateStr,
     statementEndDate: statementEndDate.split("-").reverse().join("-"),
+    paymentDueDate: paymentDueDate
+      ? paymentDueDate.split("-").reverse().join("-")
+      : null,
+    minimumAmountDue: minimumAmountDue ? minimumAmountDue.toString() : null,
   };
 
   const existingBankInfo = await db.query.creditCardBankInfo.findFirst({
@@ -187,14 +228,22 @@ export const extractTransactionsFromPDF = async (
   });
 
   if (existingBankInfo) {
+    const bankInfoUpdatePayload = isPreviousMonthStatement
+      ? {
+          totalAmountDue: bankInfoPayload.totalAmountDue,
+          paymentDueDate: bankInfoPayload.paymentDueDate,
+          minimumAmountDue: bankInfoPayload.minimumAmountDue,
+        }
+      : {
+          totalAmountDue: bankInfoPayload.totalAmountDue,
+          billingCycleStartDate: bankInfoPayload.billingCycleStartDate,
+          billingCycleEndDate: bankInfoPayload.billingCycleEndDate,
+          statementEndDate: bankInfoPayload.statementEndDate,
+        };
+
     await db
       .update(creditCardBankInfo)
-      .set({
-        totalAmountDue: bankInfoPayload.totalAmountDue,
-        billingCycleStartDate: bankInfoPayload.billingCycleStartDate,
-        billingCycleEndDate: bankInfoPayload.billingCycleEndDate,
-        statementEndDate: bankInfoPayload.statementEndDate,
-      })
+      .set(bankInfoUpdatePayload)
       .where(eq(creditCardBankInfo.bank, existingBankInfo.bank));
   } else {
     await db.insert(creditCardBankInfo).values(bankInfoPayload);
@@ -206,6 +255,8 @@ export const extractTransactionsFromPDF = async (
     statementStartDate,
     statementEndDate,
     totalAmountDue,
+    ...(paymentDueDate && { paymentDueDate }),
+    ...(minimumAmountDue != null && { minimumAmountDue }),
     newTransactions,
     duplicateCount,
     totalTransactionsParsed: allTransactions.length + emiExcludedCount,
@@ -214,7 +265,6 @@ export const extractTransactionsFromPDF = async (
 };
 
 export const getAllLatestTransactions = async () => {
-  // TODO: When adding banks other than ICICI, gotta use banks's billing cycle
   const billingCycleDates = await db.query.creditCardBankInfo.findMany({
     columns: {
       bank: true,

@@ -8,6 +8,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod"; // For Zod schema generation
+import { minimum } from "zod/mini";
 
 export const creditCardTransactions = pgTable(
   "credit_card_transactions",
@@ -44,6 +45,11 @@ export const creditCardBankInfo = pgTable("credit_card_bank_info", {
     precision: 12,
     scale: 2,
   }).notNull(),
+  minimumAmountDue: numeric("minimum_amount_due", {
+    precision: 12,
+    scale: 2,
+  }),
+  paymentDueDate: date("payment_due_date"),
   billingCycleStartDate: date("billing_cycle_start_date").notNull(),
   billingCycleEndDate: date("billing_cycle_end_date").notNull(),
   statementEndDate: date("statement_end_date").notNull(),

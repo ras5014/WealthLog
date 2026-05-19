@@ -17,6 +17,8 @@ export interface ParsedStatementResult {
   statementStartDate: string;
   statementEndDate: string;
   totalAmountDue: number;
+  paymentDueDate?: string;
+  minimumAmountDue?: number;
   newTransactions: CreditCardTransaction[];
   duplicateCount: number;
   totalTransactionsParsed: number;

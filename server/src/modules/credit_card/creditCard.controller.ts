@@ -7,8 +7,17 @@ import {
 } from "./creditCard.service.ts";
 import { autoSyncIciciStatements } from "./iciciAutoSync.service.ts";
 import db from "../../db/connection.ts";
+import redisClient from "../../db/redis.ts";
 import { creditCardBankInfo, creditCardInfo } from "../../db/schema.ts";
 import { AppError } from "../../middlewares/errorHandler.ts";
+
+const TOTAL_SPENDS_TTL_SECONDS = 60 * 60 * 24 * 35;
+
+const toDateKey = (date: Date) => {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+};
 
 export const process_ICICIStatement = async (req: Request, res: Response) => {
   // Check if a file was uploaded
@@ -23,10 +32,16 @@ export const process_ICICIStatement = async (req: Request, res: Response) => {
     const pdfData = await parser.getText();
 
     // Here you would implement the logic to parse the PDF data and extract transactions
-    const result = await extractTransactionsFromPDF(pdfData.text);
+    const result = await extractTransactionsFromPDF(pdfData.text, req.body.bank);
     res.status(200).json(result);
   } catch (error) {
     console.error(error);
+    if (
+      error instanceof Error &&
+      error.message === "BANK_SELECTION_REQUIRED"
+    ) {
+      throw new AppError("BANK_SELECTION_REQUIRED", 400);
+    }
     throw new AppError("Failed to process PDF", 500);
   } finally {
     await parser.destroy();
@@ -70,6 +85,25 @@ export const setCreditInfo = async (req: Request, res: Response) => {
 export const getCreditCardBankDetails = async (req: Request, res: Response) => {
   const result = await db.select().from(creditCardBankInfo);
   res.status(200).json(result);
+};
+
+export const cacheTotalSpends = async (req: Request, res: Response) => {
+  const totalSpends = Number(req.body?.totalSpends ?? 0);
+  const today = new Date();
+  const lastMonth = new Date(today);
+  lastMonth.setMonth(lastMonth.getMonth() - 1);
+
+  const todayKey = toDateKey(today);
+  const lastMonthKey = toDateKey(lastMonth);
+
+  const [lastMonthSameTimeSpend] = await Promise.all([
+    redisClient.get(lastMonthKey),
+    redisClient.set(todayKey, String(totalSpends), "EX", TOTAL_SPENDS_TTL_SECONDS),
+  ]);
+
+  res.status(200).json({
+    lastMonthSameTimeSpend: Number(lastMonthSameTimeSpend ?? 0),
+  });
 };
 
 export const autoSync_ICICIStatements = async (req: Request, res: Response) => {

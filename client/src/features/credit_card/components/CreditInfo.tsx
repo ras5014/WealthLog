@@ -35,13 +35,14 @@ const defaultProps = {
 
 export default function CreditInfo(props: Readonly<TotalSpentProps>) {
     const {
-        totalSpent,
-        burnRatePerDay,
-        lastMonthSameTimeSpend,
-        billingCycleStartDate,
-        billingCycleEndDate,
-        dueDate,
-        totalEmiAmount,
+        totalSpendsAllBanks = 0,
+        totalSpent = 0,
+        burnRatePerDay = 0,
+        lastMonthSameTimeSpend = 0,
+        billingCycleStartDate = "",
+        billingCycleEndDate = "",
+        dueDate = "",
+        totalEmiAmount = 0,
     } = {
         ...defaultProps,
         ...props,
@@ -55,7 +56,7 @@ export default function CreditInfo(props: Readonly<TotalSpentProps>) {
     const trend =
         lastMonthSameTimeSpend === 0
             ? 0
-            : (totalSpent - lastMonthSameTimeSpend) / lastMonthSameTimeSpend
+            : (totalSpendsAllBanks - lastMonthSameTimeSpend) / lastMonthSameTimeSpend
 
     const dueDateValue = dueDate ? new Date(dueDate) : null
     const hasValidDueDate = !!dueDateValue && !Number.isNaN(dueDateValue.getTime())
@@ -78,10 +79,12 @@ export default function CreditInfo(props: Readonly<TotalSpentProps>) {
             month: "short",
             year: "numeric",
         }).format(dueDateValue)
-        : "Not available"
+        : "N/A";
 
     const isUp = trend > 0
     const TrendIcon = isUp ? ArrowUpRight : ArrowDownRight
+
+    const creditUtilised = `${formatCurrency(totalSpent + totalEmiAmount + lastMonthBill)}/${formatCurrency(300000)}`;
 
     return (
         <Card className="flex-1 overflow-hidden border-border/60 bg-linear-to-br from-card via-card to-muted/20">
@@ -208,7 +211,8 @@ export default function CreditInfo(props: Readonly<TotalSpentProps>) {
                             <span>Credit utilization</span>
                         </span>
                         <span className="font-semibold text-foreground">
-                            {formatCurrency(50000)}/{formatCurrency(200000)} (25%)                        </span>
+                            {creditUtilised} ({((totalSpent + totalEmiAmount + lastMonthBill) / 300000 * 100).toFixed(1)}%)
+                        </span>
                     </div>
                 </div>
             </CardContent>

@@ -11,6 +11,7 @@ export const statementSchema = z.object({
       (fl) => ACCEPTED_MIME.includes(fl[0]?.type),
       `Accepted formats: ${ACCEPTED_TYPES.join(", ")}`,
     ),
+  bank: z.string().optional(),
 });
 
 export type StatementFormValues = z.infer<typeof statementSchema>;

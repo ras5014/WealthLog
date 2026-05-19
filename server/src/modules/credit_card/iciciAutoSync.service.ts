@@ -10,9 +10,11 @@ import type { ParsedStatementResult } from "./creditCard.types.ts";
 const ICICI_LOGIN_URL = "https://retailnetbanking.icici.bank.in/login-page";
 const MANUAL_DOWNLOAD_TIMEOUT_MS = 15 * 60 * 1000;
 const EXPECTED_STATEMENT_DOWNLOADS = 2;
+const ICICI_BANK_BY_DOWNLOAD_INDEX = ["ICICI_CORAL", "ICICI_AMZNPAY"] as const;
 
 type DownloadedStatement = {
   card: "coral" | "amazon-pay";
+  bank: (typeof ICICI_BANK_BY_DOWNLOAD_INDEX)[number];
   filePath: string;
 };
 
@@ -50,8 +52,14 @@ const saveManualStatementDownload = async (
 
   await download.saveAs(filePath);
 
+  const bank = ICICI_BANK_BY_DOWNLOAD_INDEX[index - 1];
+  if (!bank) {
+    throw new Error(`No ICICI bank mapping found for download ${index}.`);
+  }
+
   return {
     card: inferCardFromFilename(suggestedFilename),
+    bank,
     filePath,
   };
 };
@@ -116,7 +124,20 @@ const processDownloadedStatement = async (
 
   try {
     const pdfData = await parser.getText();
-    const result = await extractTransactionsFromPDF(pdfData.text);
+    let result: ParsedStatementResult;
+
+    try {
+      result = await extractTransactionsFromPDF(pdfData.text);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message === "BANK_SELECTION_REQUIRED"
+      ) {
+        result = await extractTransactionsFromPDF(pdfData.text, statement.bank);
+      } else {
+        throw error;
+      }
+    }
 
     return {
       card: statement.card,

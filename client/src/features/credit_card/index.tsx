@@ -12,6 +12,7 @@ import type { BankDetailSchema, CreditCardTransaction } from "./types";
 import { useEmiInfo } from "@/features/emis/hooks/useEmi"
 import { useBankDetails } from "./hooks/useBankDetails";
 import { setBillingCycleEndDate } from "./creditCardSlice";
+import { useTotalSpendsCache } from "./hooks/useTotalSpendsCache";
 
 export default function Index() {
     const dispatch = useDispatch();
@@ -21,15 +22,6 @@ export default function Index() {
     const { transactions, totalDayPassed } = data || {};
 
     // Calculations
-    const currentBillingCycle = transactions?.[0];
-    const billingCycleEndDate = currentBillingCycle?.statementEndDate;
-
-    useEffect(() => {
-        if (billingCycleEndDate) {
-            dispatch(setBillingCycleEndDate(billingCycleEndDate));
-        }
-    }, [billingCycleEndDate, dispatch]);
-
     const normalizeBankName = (value: string) =>
         value.trim().replaceAll("_", " ").replace(/\s+/g, " ").toUpperCase();
 
@@ -56,13 +48,22 @@ export default function Index() {
         return transaction.type === "Dr" ? acc + amount : acc - amount;
     }, 0) || 0;
 
-    const totalDayPassedInCurrentCycle = totalDayPassed || 0;
-    const burnRatePerDay = totalDayPassedInCurrentCycle > 0 ? totalSpendsForSelectedBank / totalDayPassedInCurrentCycle : 0;
-    // TODO: Get last month same time spend from backend/redis cache, Store last 6 months spending data on redis
-    const lastMonthSameTimeSpend = 10000;
-    const dueDate = currentBillingCycle?.statementEndDate || "";
 
     const { data: bankDetails } = useBankDetails();
+    const dueDate = bankDetails?.find((detail: BankDetailSchema) => normalizeBankName(detail.bank) === normalizeBankName(bank))?.paymentDueDate || "";
+
+    const currentBillingCycle = transactions?.[0];
+    // const billingCycleEndDate = currentBillingCycle?.statementEndDate;
+    const billingCycleEndDate = bankDetails?.find((detail: BankDetailSchema) => normalizeBankName(detail.bank) === normalizeBankName(bank))?.statementEndDate || "";
+
+
+    useEffect(() => {
+        if (billingCycleEndDate) {
+            dispatch(setBillingCycleEndDate(billingCycleEndDate));
+        }
+    }, [billingCycleEndDate, dispatch]);
+
+
     // Get the EMIs
     const { data: emis, isPending: isEmiPending, isError: isEmiError } = useEmiInfo();
     // Calculate expected EMI for this billing cycle
@@ -98,6 +99,12 @@ export default function Index() {
         }, sum);
     }, 0);
 
+    const totalDayPassedInCurrentCycle = totalDayPassed || 0;
+    const burnRatePerDay = totalDayPassedInCurrentCycle > 0 ? (totalSpends + totalEmiAmountAllBanks) / totalDayPassedInCurrentCycle : 0;
+
+    const { data: totalSpendsCache } = useTotalSpendsCache((totalSpends + totalEmiAmountAllBanks), Boolean(transactions));
+    const lastMonthSameTimeSpend = totalSpendsCache?.lastMonthSameTimeSpend ?? 0;
+
     return (
         <>
             {isPending && <p>Loading...</p>}
@@ -105,11 +112,12 @@ export default function Index() {
             <div className="grid gap-4 md:grid-cols-1 xl:grid-cols-3">
                 <TotalBudget totalSpends={totalSpends + totalEmiAmountAllBanks} />
                 <CreditInfo
+                    totalSpendsAllBanks={totalSpends + totalEmiAmountAllBanks}
                     totalSpent={totalSpendsForSelectedBank}
                     burnRatePerDay={burnRatePerDay}
                     lastMonthSameTimeSpend={lastMonthSameTimeSpend}
                     billingCycleStartDate={currentBillingCycle?.statementStartDate}
-                    billingCycleEndDate={currentBillingCycle?.statementEndDate}
+                    billingCycleEndDate={billingCycleEndDate}
                     dueDate={dueDate}
                     totalEmiAmount={totalEmiAmount}
                 />
