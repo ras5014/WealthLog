@@ -12,6 +12,7 @@ import type { BankDetailSchema, CreditCardTransaction } from "./types";
 import { useEmiInfo } from "@/features/emis/hooks/useEmi"
 import { useBankDetails } from "./hooks/useBankDetails";
 import { setBillingCycleEndDate } from "./creditCardSlice";
+import { useTotalSpendsCache } from "./hooks/useTotalSpendsCache";
 
 export default function Index() {
     const dispatch = useDispatch();
@@ -56,7 +57,7 @@ export default function Index() {
         return transaction.type === "Dr" ? acc + amount : acc - amount;
     }, 0) || 0;
 
-    const lastMonthSameTimeSpend = 20000; // Get this value from Redis
+
     const { data: bankDetails } = useBankDetails();
     const dueDate = bankDetails?.find((detail: BankDetailSchema) => normalizeBankName(detail.bank) === normalizeBankName(bank))?.paymentDueDate || "";
 
@@ -99,8 +100,8 @@ export default function Index() {
     const totalDayPassedInCurrentCycle = totalDayPassed || 0;
     const burnRatePerDay = totalDayPassedInCurrentCycle > 0 ? (totalSpends + totalEmiAmountAllBanks) / totalDayPassedInCurrentCycle : 0;
 
-    // TODO: Put the totalSpends in redis where the key is today's date
-
+    const { data: totalSpendsCache } = useTotalSpendsCache((totalSpends + totalEmiAmountAllBanks), Boolean(transactions));
+    const lastMonthSameTimeSpend = totalSpendsCache?.lastMonthSameTimeSpend ?? 0;
 
     return (
         <>
