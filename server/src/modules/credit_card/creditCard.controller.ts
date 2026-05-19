@@ -11,7 +11,7 @@ import redisClient from "../../db/redis.ts";
 import { creditCardBankInfo, creditCardInfo } from "../../db/schema.ts";
 import { AppError } from "../../middlewares/errorHandler.ts";
 
-const TOTAL_SPENDS_TTL_SECONDS = 60 * 60 * 24 * 30;
+const TOTAL_SPENDS_TTL_SECONDS = 60 * 60 * 24 * 35;
 
 const toDateKey = (date: Date) => {
   const month = String(date.getMonth() + 1).padStart(2, "0");

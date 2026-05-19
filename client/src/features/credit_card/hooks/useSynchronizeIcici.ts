@@ -2,6 +2,7 @@ import api from "@/lib/axios";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { markTotalSpendsCacheForSync } from "./useTotalSpendsCache";
 
 type SynchronizeIciciStatementInput = {
   file: File;
@@ -41,8 +42,9 @@ export const useSynchronizeIcici = () => {
 
   return useMutation({
     mutationFn: synchronizeIciciStatement,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      markTotalSpendsCacheForSync();
       queryClient.invalidateQueries({ queryKey: ["bankDetails"] });
       toast.success("Statement synchronized successfully!");
     },
@@ -63,8 +65,9 @@ export const useAutoSyncIcici = () => {
 
   return useMutation({
     mutationFn: autoSyncIciciStatements,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      markTotalSpendsCacheForSync();
       queryClient.invalidateQueries({ queryKey: ["bankDetails"] });
       toast.success("ICICI statements auto synchronized successfully!");
     },
