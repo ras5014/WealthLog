@@ -56,11 +56,7 @@ export default function Index() {
         return transaction.type === "Dr" ? acc + amount : acc - amount;
     }, 0) || 0;
 
-    const totalDayPassedInCurrentCycle = totalDayPassed || 0;
-    const burnRatePerDay = totalDayPassedInCurrentCycle > 0 ? totalSpendsForSelectedBank / totalDayPassedInCurrentCycle : 0;
-    // TODO: Get last month same time spend from backend/redis cache, Store last 6 months spending data on redis
-    const lastMonthSameTimeSpend = 10000;
-    // const dueDate = currentBillingCycle?.statementEndDate || "";
+    const lastMonthSameTimeSpend = 20000; // Get this value from Redis
     const { data: bankDetails } = useBankDetails();
     const dueDate = bankDetails?.find((detail: BankDetailSchema) => normalizeBankName(detail.bank) === normalizeBankName(bank))?.paymentDueDate || "";
 
@@ -100,6 +96,12 @@ export default function Index() {
         }, sum);
     }, 0);
 
+    const totalDayPassedInCurrentCycle = totalDayPassed || 0;
+    const burnRatePerDay = totalDayPassedInCurrentCycle > 0 ? (totalSpends + totalEmiAmountAllBanks) / totalDayPassedInCurrentCycle : 0;
+
+    // TODO: Put the totalSpends in redis where the key is today's date
+
+
     return (
         <>
             {isPending && <p>Loading...</p>}
@@ -107,6 +109,7 @@ export default function Index() {
             <div className="grid gap-4 md:grid-cols-1 xl:grid-cols-3">
                 <TotalBudget totalSpends={totalSpends + totalEmiAmountAllBanks} />
                 <CreditInfo
+                    totalSpendsAllBanks={totalSpends + totalEmiAmountAllBanks}
                     totalSpent={totalSpendsForSelectedBank}
                     burnRatePerDay={burnRatePerDay}
                     lastMonthSameTimeSpend={lastMonthSameTimeSpend}

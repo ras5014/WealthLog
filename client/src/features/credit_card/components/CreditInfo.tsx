@@ -35,6 +35,7 @@ const defaultProps = {
 
 export default function CreditInfo(props: Readonly<TotalSpentProps>) {
     const {
+        totalSpendsAllBanks,
         totalSpent,
         burnRatePerDay,
         lastMonthSameTimeSpend,
@@ -55,7 +56,7 @@ export default function CreditInfo(props: Readonly<TotalSpentProps>) {
     const trend =
         lastMonthSameTimeSpend === 0
             ? 0
-            : (totalSpent - lastMonthSameTimeSpend) / lastMonthSameTimeSpend
+            : (totalSpendsAllBanks - lastMonthSameTimeSpend) / lastMonthSameTimeSpend
 
     const dueDateValue = dueDate ? new Date(dueDate) : null
     const hasValidDueDate = !!dueDateValue && !Number.isNaN(dueDateValue.getTime())
