@@ -22,15 +22,6 @@ export default function Index() {
     const { transactions, totalDayPassed } = data || {};
 
     // Calculations
-    const currentBillingCycle = transactions?.[0];
-    const billingCycleEndDate = currentBillingCycle?.statementEndDate;
-
-    useEffect(() => {
-        if (billingCycleEndDate) {
-            dispatch(setBillingCycleEndDate(billingCycleEndDate));
-        }
-    }, [billingCycleEndDate, dispatch]);
-
     const normalizeBankName = (value: string) =>
         value.trim().replaceAll("_", " ").replace(/\s+/g, " ").toUpperCase();
 
@@ -60,6 +51,17 @@ export default function Index() {
 
     const { data: bankDetails } = useBankDetails();
     const dueDate = bankDetails?.find((detail: BankDetailSchema) => normalizeBankName(detail.bank) === normalizeBankName(bank))?.paymentDueDate || "";
+
+    const currentBillingCycle = transactions?.[0];
+    // const billingCycleEndDate = currentBillingCycle?.statementEndDate;
+    const billingCycleEndDate = bankDetails?.find((detail: BankDetailSchema) => normalizeBankName(detail.bank) === normalizeBankName(bank))?.statementEndDate || "";
+
+
+    useEffect(() => {
+        if (billingCycleEndDate) {
+            dispatch(setBillingCycleEndDate(billingCycleEndDate));
+        }
+    }, [billingCycleEndDate, dispatch]);
 
 
     // Get the EMIs
@@ -115,7 +117,7 @@ export default function Index() {
                     burnRatePerDay={burnRatePerDay}
                     lastMonthSameTimeSpend={lastMonthSameTimeSpend}
                     billingCycleStartDate={currentBillingCycle?.statementStartDate}
-                    billingCycleEndDate={currentBillingCycle?.statementEndDate}
+                    billingCycleEndDate={billingCycleEndDate}
                     dueDate={dueDate}
                     totalEmiAmount={totalEmiAmount}
                 />
