@@ -86,12 +86,12 @@ export default function CategorySpendChart({ transactions = [] }: CategorySpendC
     return (
         <Card className="overflow-hidden border-border/60 bg-linear-to-br from-card via-card to-muted/15">
             <CardHeader className="h-20 border-b border-border/60 bg-muted/10">
-                <div className="flex items-start gap-2">
-                    <ChartPie className="mt-0.5 size-5 text-muted-foreground" />
-                    <div className="space-y-1">
+                <div className="space-y-1">
+                    <div className="flex items-start gap-2">
+                        <ChartPie className="mt-0.5 size-5 text-muted-foreground" />
                         <CardTitle className="text-base font-semibold">Category Spending</CardTitle>
-                        <CardDescription>Spend mix for the selected billing cycle</CardDescription>
                     </div>
+                    <CardDescription>Spend mix for the selected billing cycle</CardDescription>
                 </div>
             </CardHeader>
             <CardContent className="space-y-4 pt-4">
