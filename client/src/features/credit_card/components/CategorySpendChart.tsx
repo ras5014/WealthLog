@@ -198,8 +198,8 @@ export default function CategorySpendChart({ transactions = [] }: CategorySpendC
                         </div>
 
                         {topCategory && (
-                            <div className="rounded-lg border border-border/60 bg-background/60 px-3.5 py-2.5 text-sm">
-                                <span className="text-muted-foreground">Top category </span>
+                            <div className="rounded-lg border border-border/60 bg-background/60 px-3.5 py-2.5 text-sm text-center">
+                                <span className="text-muted-foreground">Top category: </span>
                                 <span className="font-medium text-foreground">{topCategory.category}</span>
                             </div>
                         )}
