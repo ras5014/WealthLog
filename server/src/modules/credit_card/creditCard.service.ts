@@ -11,6 +11,7 @@ import {
 import { and, eq, inArray } from "drizzle-orm";
 import { PREFIXES_TO_EXCLUDE, CARD_DETAILS } from "../../config/constants.ts";
 import { calculateBillingCycleDates } from "../../lib/utils.ts";
+import { categorizeTransactions } from "../../lib/categorization.ts";
 
 export const extractTransactionsFromPDF = async (
   pdfText: string,
@@ -193,11 +194,13 @@ export const extractTransactionsFromPDF = async (
     (t) => !existingRefs.has(t.referenceNumber),
   );
   const duplicateCount = transactionsForDedup.length - newTransactions.length;
+  const categorizedNewTransactions =
+    await categorizeTransactions(newTransactions);
 
   // 8. Persist new transactions to the database
-  if (newTransactions.length > 0) {
+  if (categorizedNewTransactions.length > 0) {
     await db.insert(creditCardTransactions).values(
-      newTransactions.map((t) => ({
+      categorizedNewTransactions.map((t) => ({
         transactionDate: t.transactionDate.split("-").reverse().join("-"), // DD-MM-YYYY -> YYYY-MM-DD
         details: t.details,
         amount: t.amount.toString(),
@@ -206,6 +209,8 @@ export const extractTransactionsFromPDF = async (
         statementStartDate: t.statementStartDate.split("-").reverse().join("-"), // DD-MM-YYYY -> YYYY-MM-DD
         statementEndDate: t.statementEndDate.split("-").reverse().join("-"), // DD-MM-YYYY -> YYYY-MM-DD
         bank,
+        description: t.description,
+        category: t.category,
       })),
     );
   }
@@ -257,7 +262,7 @@ export const extractTransactionsFromPDF = async (
     totalAmountDue,
     ...(paymentDueDate && { paymentDueDate }),
     ...(minimumAmountDue != null && { minimumAmountDue }),
-    newTransactions,
+    newTransactions: categorizedNewTransactions,
     duplicateCount,
     totalTransactionsParsed: allTransactions.length + emiExcludedCount,
     emiExcludedCount,
@@ -293,6 +298,8 @@ export const getAllLatestTransactions = async () => {
       statementStartDate: true,
       statementEndDate: true,
       bank: true,
+      description: true,
+      category: true,
     },
     where: (transactions, { eq }) =>
       eq(

@@ -23,6 +23,7 @@ export const creditCardTransactions = pgTable(
     statementEndDate: date("statement_end_date").notNull(),
     bank: varchar("bank", { length: 64 }).notNull(),
     description: varchar("description", { length: 512 }),
+    category: varchar("category", { length: 128 }),
   },
   (table) => [
     uniqueIndex("uq_ref_statement").on(

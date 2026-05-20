@@ -10,6 +10,8 @@ export type CreditCardTransaction = {
   statementStartDate: string;
   statementEndDate: string;
   bank: string;
+  description?: string;
+  category?: string;
 };
 
 export type TransactionsResponse = {

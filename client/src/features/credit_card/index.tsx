@@ -50,11 +50,10 @@ export default function Index() {
 
 
     const { data: bankDetails } = useBankDetails();
-    const dueDate = bankDetails?.find((detail: BankDetailSchema) => normalizeBankName(detail.bank) === normalizeBankName(bank))?.paymentDueDate || "";
+    const dueDate = bankDetails?.find((detail: BankDetailSchema) => normalizeBankName(detail.bank) === normalizeBankName(bank))?.paymentDueDate || bankDetails?.[0]?.paymentDueDate || "";
 
     const currentBillingCycle = transactions?.[0];
-    // const billingCycleEndDate = currentBillingCycle?.statementEndDate;
-    const billingCycleEndDate = bankDetails?.find((detail: BankDetailSchema) => normalizeBankName(detail.bank) === normalizeBankName(bank))?.statementEndDate || "";
+    const billingCycleEndDate = bankDetails?.find((detail: BankDetailSchema) => normalizeBankName(detail.bank) === normalizeBankName(bank))?.statementEndDate || bankDetails?.[0]?.statementEndDate || "";
 
 
     useEffect(() => {
@@ -121,7 +120,7 @@ export default function Index() {
                     dueDate={dueDate}
                     totalEmiAmount={totalEmiAmount}
                 />
-                <CategorySpendChart />
+                <CategorySpendChart transactions={filteredTransactions} />
             </div>
 
             <div className="mt-6">

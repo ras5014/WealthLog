@@ -51,6 +51,10 @@ const envSchema = z.object({
   // ICICI auto sync
   ICICI_USER_ID: z.string().optional(),
   ICICI_PASSWORD: z.string().optional(),
+
+  // Groq AI categorization
+  GROQ_API_KEY: z.string().optional(),
+  GROQ_MODEL: z.string().optional(),
 });
 
 // Type inference from schema
@@ -66,6 +70,8 @@ try {
     JWT_SECRET: env.JWT_SECRET ? "[redacted]" : undefined,
     ICICI_USER_ID: env.ICICI_USER_ID ? "[redacted]" : undefined,
     ICICI_PASSWORD: env.ICICI_PASSWORD ? "[redacted]" : undefined,
+    GROQ_API_KEY: env.GROQ_API_KEY ? "[redacted]" : undefined,
+    GROQ_MODEL: env.GROQ_MODEL,
   }); // Log the validated environment variables for debugging
 } catch (error) {
   if (error instanceof z.ZodError) {
