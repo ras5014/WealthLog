@@ -1,6 +1,11 @@
 import api from "@/lib/axios";
-import { useQuery } from "@tanstack/react-query";
-import type { EmiDashboardData, EmiInfoItem } from "@/features/emis/type";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type {
+  CreateCustomEmiInput,
+  EmiDashboardData,
+  EmiInfoItem,
+} from "@/features/emis/type";
+import toast from "react-hot-toast";
 
 const getEmiDashboard = async (): Promise<EmiDashboardData> => {
   const response = await api.get("/emi/get-emi-dashboard");
@@ -9,6 +14,16 @@ const getEmiDashboard = async (): Promise<EmiDashboardData> => {
 
 const getEmiInfo = async (): Promise<EmiInfoItem[]> => {
   const response = await api.get("/emi/get-emi-info");
+  return response.data;
+};
+
+const createCustomEmi = async (input: CreateCustomEmiInput) => {
+  const response = await api.post("/emi/custom-emi", input);
+  return response.data;
+};
+
+const deleteEmi = async (id: string) => {
+  const response = await api.delete(`/emi/${id}`);
   return response.data;
 };
 
@@ -28,4 +43,38 @@ export const useEmiInfo = () => {
   });
 
   return { data, isPending, isError };
+};
+
+export const useCreateCustomEmi = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createCustomEmi,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["emi-dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["emi-info"] });
+      toast.success("Custom EMI added.");
+    },
+    onError: (error) => {
+      console.error("Error creating custom EMI:", error);
+      toast.error("Failed to add custom EMI.");
+    },
+  });
+};
+
+export const useDeleteEmi = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteEmi,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["emi-dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["emi-info"] });
+      toast.success("EMI deleted.");
+    },
+    onError: (error) => {
+      console.error("Error deleting EMI:", error);
+      toast.error("Failed to delete EMI.");
+    },
+  });
 };

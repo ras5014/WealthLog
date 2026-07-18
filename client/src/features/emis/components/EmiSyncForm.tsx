@@ -2,13 +2,12 @@ import { Input } from "@/components/ui/input";
 import { useSynchronizeEmi, useAutoSyncEmi } from "../hooks/useSynchronizeEmi";
 import { ACCEPTED_TYPES, emiStatementSchema, type EmiStatementFormValues } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useWatch } from "react-hook-form";
 import { Bot } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-const EMI_BANK_OPTIONS = ["ICICI_CORAL", "ICICI_AMZNPAY"] as const;
+import { EMI_BANK_OPTIONS } from "@/lib/constants";
 
 export default function EmiSyncForm({ setOpen }: { readonly setOpen: (open: boolean) => void }) {
     const [autoLogin, setAutoLogin] = useState(false);
@@ -21,7 +20,6 @@ export default function EmiSyncForm({ setOpen }: { readonly setOpen: (open: bool
         register,
         handleSubmit,
         reset,
-        watch,
         control,
         formState: { errors },
     } = useForm<EmiStatementFormValues>({
@@ -29,8 +27,8 @@ export default function EmiSyncForm({ setOpen }: { readonly setOpen: (open: bool
         defaultValues: { bank: EMI_BANK_OPTIONS[0] },
     });
 
-    const emiFile = watch("emiStatement")?.[0];
-    const bank = watch("bank");
+    const emiFile = useWatch({ control, name: "emiStatement" })?.[0];
+    const bank = useWatch({ control, name: "bank" });
 
     async function onSubmit(data: EmiStatementFormValues) {
         await synchronizeEmi.mutateAsync({ file: data.emiStatement[0], bank: data.bank });

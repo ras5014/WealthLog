@@ -1,5 +1,17 @@
 import { Fragment, useState } from "react";
-import { ChevronDown, ChevronRight, Landmark } from "lucide-react";
+import { ChevronDown, ChevronRight, Landmark, Trash2 } from "lucide-react";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import {
     Table,
     TableBody,
@@ -9,8 +21,9 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
-import { useEmiInfo } from "@/features/emis/hooks/useEmi";
+import { useDeleteEmi, useEmiInfo } from "@/features/emis/hooks/useEmi";
 import type { EmiInfoItem } from "../type";
+import AddCustomEmiDialog from "./AddCustomEmiDialog";
 
 function AmortizationTable({ emi }: { emi: EmiInfoItem }) {
     const schedule = emi.amortizationSchedule ?? [];
@@ -18,7 +31,7 @@ function AmortizationTable({ emi }: { emi: EmiInfoItem }) {
 
     return (
         <TableRow className="hover:bg-transparent">
-            <TableCell colSpan={6} className="p-0">
+            <TableCell colSpan={7} className="p-0">
                 <div className="border-l-4 border-l-blue-500 bg-muted/10 px-8 py-4">
                     <p className="mb-3 text-sm font-semibold text-foreground">
                         Amortization Schedule — <span className="text-blue-600">{label}</span>
@@ -82,6 +95,46 @@ function AmortizationTable({ emi }: { emi: EmiInfoItem }) {
     );
 }
 
+function DeleteEmiAction({ emi }: { emi: EmiInfoItem }) {
+    const deleteEmi = useDeleteEmi();
+    const label = emi.description || emi.merchant || "this EMI";
+
+    return (
+        <AlertDialog>
+            <AlertDialogTrigger asChild>
+                <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon-sm"
+                    aria-label="Delete EMI"
+                    onClick={(event) => event.stopPropagation()}
+                    disabled={deleteEmi.isPending}
+                >
+                    <Trash2 className="size-4" />
+                </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent onClick={(event) => event.stopPropagation()}>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Delete EMI</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Delete <strong>{label}</strong>? This removes the EMI and recalculates your loan summary and forecast.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel disabled={deleteEmi.isPending}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                        variant="destructive"
+                        onClick={() => deleteEmi.mutate(emi.id)}
+                        disabled={deleteEmi.isPending}
+                    >
+                        Delete
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
+}
+
 export default function EMITable() {
     const { data: emis, isPending, isError } = useEmiInfo();
     const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -123,31 +176,34 @@ export default function EMITable() {
                         </span>
                     </p>
                 </div>
-                <div className="flex rounded-lg border border-border bg-background p-1">
-                    <button
-                        type="button"
-                        onClick={() => setSelectedTab("active")}
-                        className={cn(
-                            "rounded-md px-3 py-1.5 text-sm font-medium transition",
-                            selectedTab === "active"
-                                ? "bg-muted text-foreground"
-                                : "text-muted-foreground hover:text-foreground",
-                        )}
-                    >
-                        Active ({activeEmis.length})
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setSelectedTab("paid")}
-                        className={cn(
-                            "rounded-md px-3 py-1.5 text-sm font-medium transition",
-                            selectedTab === "paid"
-                                ? "bg-muted text-foreground"
-                                : "text-muted-foreground hover:text-foreground",
-                        )}
-                    >
-                        Paid ({paidEmis.length})
-                    </button>
+                <div className="flex items-center gap-2">
+                    <div className="flex rounded-lg border border-border bg-background p-1">
+                        <button
+                            type="button"
+                            onClick={() => setSelectedTab("active")}
+                            className={cn(
+                                "rounded-md px-3 py-1.5 text-sm font-medium transition",
+                                selectedTab === "active"
+                                    ? "bg-muted text-foreground"
+                                    : "text-muted-foreground hover:text-foreground",
+                            )}
+                        >
+                            Active ({activeEmis.length})
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setSelectedTab("paid")}
+                            className={cn(
+                                "rounded-md px-3 py-1.5 text-sm font-medium transition",
+                                selectedTab === "paid"
+                                    ? "bg-muted text-foreground"
+                                    : "text-muted-foreground hover:text-foreground",
+                            )}
+                        >
+                            Paid ({paidEmis.length})
+                        </button>
+                    </div>
+                    <AddCustomEmiDialog />
                 </div>
             </div>
 
@@ -160,12 +216,13 @@ export default function EMITable() {
                         <TableHead className="h-12 px-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Total Amount</TableHead>
                         <TableHead className="h-12 px-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground text-center">Installments</TableHead>
                         <TableHead className="h-12 px-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground text-center">Progress</TableHead>
+                        <TableHead className="h-12 px-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground text-center">Actions</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {visibleEmis.length === 0 ? (
                         <TableRow>
-                            <TableCell colSpan={6} className="h-32 px-4 text-center">
+                            <TableCell colSpan={7} className="h-32 px-4 text-center">
                                 <div className="space-y-1">
                                     <p className="font-medium text-foreground">
                                         No {selectedTab === "active" ? "active" : "paid"} EMIs found
@@ -242,13 +299,16 @@ export default function EMITable() {
                                             {paidCount} / {totalCount}
                                         </span>
                                     </TableCell>
+                                    <TableCell className="px-4 py-3 text-center">
+                                        <DeleteEmiAction emi={emi} />
+                                    </TableCell>
                                 </TableRow>
                                 {isExpanded && (
                                     <AmortizationTable emi={emi} />
                                 )}
                                 {isExpanded && (
                                     <TableRow className="hover:bg-transparent">
-                                        <TableCell colSpan={6} className="h-2 bg-border/30 p-0" />
+                                        <TableCell colSpan={7} className="h-2 bg-border/30 p-0" />
                                     </TableRow>
                                 )}
                             </Fragment>

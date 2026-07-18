@@ -33,6 +33,17 @@ export type EmiInfoItem = {
   amortizationSchedule: AmortizationScheduleItem[] | null;
 };
 
+export type CreateCustomEmiInput = {
+  bank: string;
+  description: string;
+  merchant?: string;
+  totalAmount: number;
+  installmentAmount: number;
+  installmentCount: number;
+  firstPaymentDate: string;
+  paidInstallments: number;
+};
+
 export type EmiDashboardData = {
   emiRecords: EmiRecord[];
   totalLoanAmount: number;
