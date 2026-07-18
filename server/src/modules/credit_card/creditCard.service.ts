@@ -98,12 +98,30 @@ export const extractTransactionsFromPDF = async (
     /Transaction Date\s+Details\s+Amount \(INR\)\s+(?:Reward Points\s+)?Reference Number\s*\n/;
   const headerMatch = headerPattern.exec(pdfText);
   if (headerMatch?.index == null) {
-    throw new Error("Could not find transaction table header in the PDF");
+    const altHeaderPattern = /Transaction\s+Details/i;
+    headerMatch = altHeaderPattern.exec(pdfText);
+  }
+
+  if (headerMatch?.index == null) {
+    // More helpful error message with debugging info
+    const textPreview = pdfText.substring(0, 800);
+    console.error("PDF text preview (first 800 chars):", textPreview);
+    console.error("Looking for transaction table header with patterns:");
+    console.error(
+      "1. Primary: Transaction Date...Details...Amount (INR)...Reference Number",
+    );
+    console.error("2. Fallback: Transaction Details");
+    throw new Error(
+      `Could not find transaction table header in the PDF. Expected format: "Transaction Date Details Amount (INR) Reference Number"`,
+    );
   }
 
   let transactionText = pdfText.slice(
     headerMatch.index + headerMatch[0].length,
   );
+
+  console.log("Header match found:", headerMatch[0]);
+  console.log("Transaction text length:", transactionText.length);
 
   // 4. Remove page break markers (e.g. "-- 1 of 3 --")
   transactionText = transactionText.replaceAll(
@@ -144,6 +162,16 @@ export const extractTransactionsFromPDF = async (
       statementEndDate,
       bank,
     });
+  }
+
+  console.log(
+    `Parsed ${allTransactions.length} transactions, ${emiExcludedCount} EMI transactions excluded`,
+  );
+  if (allTransactions.length === 0) {
+    console.warn(
+      "No transactions found in statement. Transaction text preview:",
+    );
+    console.warn(transactionText.substring(0, 500));
   }
 
   // 7. Deduplicate against existing DB records for this statement period

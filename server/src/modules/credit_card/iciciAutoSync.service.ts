@@ -75,6 +75,7 @@ const triggerAndCaptureDownload = async (
 
   // Wait for download to complete
   const download = await downloadPromise;
+  console.log(`Download ${index} received: ${download.suggestedFilename()}`);
 
   return saveManualStatementDownload(download, runDownloadDir, index);
 };
@@ -85,18 +86,34 @@ const autoDownloadStatements = async (
 ): Promise<DownloadedStatement[]> => {
   const downloadedStatements: DownloadedStatement[] = [];
 
-  // First download - Coral card
-  downloadedStatements.push(
-    await triggerAndCaptureDownload(page, runDownloadDir, 1),
-  );
+  try {
+    // First download - Coral card
+    console.log("Triggering download for Coral card...");
+    downloadedStatements.push(
+      await triggerAndCaptureDownload(page, runDownloadDir, 1),
+    );
+    console.log("Coral card statement downloaded successfully");
 
-  // Click Amazon Pay card to switch
-  await page.getByTitle("Amazon Pay ICICI Bank VISA-").click();
+    // Small delay to ensure page is ready for card switch
+    await page.waitForTimeout(1000);
 
-  // Second download - Amazon Pay card
-  downloadedStatements.push(
-    await triggerAndCaptureDownload(page, runDownloadDir, 2),
-  );
+    // Click Amazon Pay card to switch
+    console.log("Switching to Amazon Pay card...");
+    await page.getByTitle("Amazon Pay ICICI Bank VISA-").click();
+    await page.waitForTimeout(1000); // Wait for page to load the new card
+
+    // Second download - Amazon Pay card
+    console.log("Triggering download for Amazon Pay card...");
+    downloadedStatements.push(
+      await triggerAndCaptureDownload(page, runDownloadDir, 2),
+    );
+    console.log("Amazon Pay card statement downloaded successfully");
+  } catch (error) {
+    console.error("Error during auto download:", error);
+    throw new Error(
+      `Failed to download ICICI statements: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
+  }
 
   return downloadedStatements;
 };
@@ -140,6 +157,11 @@ const processDownloadedStatement = async (
       ) {
         result = await extractTransactionsFromPDF(pdfData.text, statement.bank);
       } else {
+        // Provide more context when PDF parsing fails
+        console.error(
+          `PDF parsing failed for ${statement.card} card (${statement.bank}):`,
+          error,
+        );
         throw error;
       }
     }
