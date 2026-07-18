@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { ChevronDown, ChevronRight, Landmark } from "lucide-react";
 import {
     Table,
@@ -85,6 +85,7 @@ function AmortizationTable({ emi }: { emi: EmiInfoItem }) {
 export default function EMITable() {
     const { data: emis, isPending, isError } = useEmiInfo();
     const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+    const [selectedTab, setSelectedTab] = useState<"active" | "paid">("active");
 
     const toggleRow = (id: string) => {
         setExpandedIds((prev) => {
@@ -102,6 +103,15 @@ export default function EMITable() {
     if (isError) return <p>Error loading EMI info</p>;
     if (!emis || emis.length === 0) return <p>No EMIs found</p>;
 
+    const isPaidOff = (emi: EmiInfoItem) => {
+        const schedule = emi.amortizationSchedule ?? [];
+        return schedule.length > 0 && schedule.every((item) => item.paymentStatus === "paid");
+    };
+
+    const activeEmis = emis.filter((emi) => !isPaidOff(emi));
+    const paidEmis = emis.filter(isPaidOff);
+    const visibleEmis = selectedTab === "active" ? activeEmis : paidEmis;
+
     return (
         <div className="xl:col-span-3 overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
             <div className="flex items-center justify-between border-b border-border/60 bg-gradient-to-r from-blue-500/5 via-transparent to-violet-500/5 px-4 py-3">
@@ -109,9 +119,35 @@ export default function EMITable() {
                     <p className="text-lg font-semibold text-foreground flex items-center gap-2">
                         <Landmark className="h-5 w-5" /> EMI Details
                         <span className="text-xs text-muted-foreground">
-                            {emis.length} active {emis.length === 1 ? "loan" : "loans"}
+                            {activeEmis.length} active {activeEmis.length === 1 ? "loan" : "loans"}
                         </span>
                     </p>
+                </div>
+                <div className="flex rounded-lg border border-border bg-background p-1">
+                    <button
+                        type="button"
+                        onClick={() => setSelectedTab("active")}
+                        className={cn(
+                            "rounded-md px-3 py-1.5 text-sm font-medium transition",
+                            selectedTab === "active"
+                                ? "bg-muted text-foreground"
+                                : "text-muted-foreground hover:text-foreground",
+                        )}
+                    >
+                        Active ({activeEmis.length})
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setSelectedTab("paid")}
+                        className={cn(
+                            "rounded-md px-3 py-1.5 text-sm font-medium transition",
+                            selectedTab === "paid"
+                                ? "bg-muted text-foreground"
+                                : "text-muted-foreground hover:text-foreground",
+                        )}
+                    >
+                        Paid ({paidEmis.length})
+                    </button>
                 </div>
             </div>
 
@@ -127,16 +163,30 @@ export default function EMITable() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {emis.map((emi, idx) => {
+                    {visibleEmis.length === 0 ? (
+                        <TableRow>
+                            <TableCell colSpan={6} className="h-32 px-4 text-center">
+                                <div className="space-y-1">
+                                    <p className="font-medium text-foreground">
+                                        No {selectedTab === "active" ? "active" : "paid"} EMIs found
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                        {selectedTab === "active"
+                                            ? "Completed loans will move to the Paid tab automatically."
+                                            : "Fully paid loans will appear here."}
+                                    </p>
+                                </div>
+                            </TableCell>
+                        </TableRow>
+                    ) : visibleEmis.map((emi, idx) => {
                         const isExpanded = expandedIds.has(emi.id);
                         const schedule = emi.amortizationSchedule ?? [];
                         const paidCount = schedule.filter((i) => i.paymentStatus === "paid").length;
                         const totalCount = schedule.length;
 
                         return (
-                            <>
+                            <Fragment key={emi.id}>
                                 <TableRow
-                                    key={emi.id}
                                     className={cn(
                                         "cursor-pointer transition-colors",
                                         isExpanded
@@ -194,14 +244,14 @@ export default function EMITable() {
                                     </TableCell>
                                 </TableRow>
                                 {isExpanded && (
-                                    <AmortizationTable key={`${emi.id}-schedule`} emi={emi} />
+                                    <AmortizationTable emi={emi} />
                                 )}
                                 {isExpanded && (
                                     <TableRow className="hover:bg-transparent">
                                         <TableCell colSpan={6} className="h-2 bg-border/30 p-0" />
                                     </TableRow>
                                 )}
-                            </>
+                            </Fragment>
                         );
                     })}
                 </TableBody>
