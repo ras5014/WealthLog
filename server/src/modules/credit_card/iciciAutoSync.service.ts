@@ -8,8 +8,6 @@ import { extractTransactionsFromPDF } from "./creditCard.service.ts";
 import type { ParsedStatementResult } from "./creditCard.types.ts";
 
 const ICICI_LOGIN_URL = "https://retailnetbanking.icici.bank.in/login-page";
-const MANUAL_DOWNLOAD_TIMEOUT_MS = 15 * 60 * 1000;
-const EXPECTED_STATEMENT_DOWNLOADS = 2;
 const ICICI_BANK_BY_DOWNLOAD_INDEX = ["ICICI_CORAL", "ICICI_AMZNPAY"] as const;
 
 type DownloadedStatement = {
@@ -64,34 +62,41 @@ const saveManualStatementDownload = async (
   };
 };
 
-const waitForManualStatementDownloads = async (
+const triggerAndCaptureDownload = async (
+  page: Page,
+  runDownloadDir: string,
+  index: number,
+): Promise<DownloadedStatement> => {
+  // Set up download listener BEFORE clicking
+  const downloadPromise = page.waitForEvent("download");
+
+  // Click download button to trigger download
+  await page.getByRole("button", { name: "download" }).click();
+
+  // Wait for download to complete
+  const download = await downloadPromise;
+
+  return saveManualStatementDownload(download, runDownloadDir, index);
+};
+
+const autoDownloadStatements = async (
   page: Page,
   runDownloadDir: string,
 ): Promise<DownloadedStatement[]> => {
   const downloadedStatements: DownloadedStatement[] = [];
-  const startedAt = Date.now();
 
-  while (downloadedStatements.length < EXPECTED_STATEMENT_DOWNLOADS) {
-    const remainingMs = MANUAL_DOWNLOAD_TIMEOUT_MS - (Date.now() - startedAt);
+  // First download - Coral card
+  downloadedStatements.push(
+    await triggerAndCaptureDownload(page, runDownloadDir, 1),
+  );
 
-    if (remainingMs <= 0) {
-      throw new Error(
-        `Timed out waiting for ${EXPECTED_STATEMENT_DOWNLOADS} ICICI statement downloads. Captured ${downloadedStatements.length}.`,
-      );
-    }
+  // Click Amazon Pay card to switch
+  await page.getByTitle("Amazon Pay ICICI Bank VISA-").click();
 
-    const download = await page.waitForEvent("download", {
-      timeout: remainingMs,
-    });
-
-    downloadedStatements.push(
-      await saveManualStatementDownload(
-        download,
-        runDownloadDir,
-        downloadedStatements.length + 1,
-      ),
-    );
-  }
+  // Second download - Amazon Pay card
+  downloadedStatements.push(
+    await triggerAndCaptureDownload(page, runDownloadDir, 2),
+  );
 
   return downloadedStatements;
 };
@@ -176,10 +181,17 @@ export const autoSyncIciciStatements = async (
       await autoLoginIcici(page);
     }
 
-    // Temp
-    // await page.locator('a:has-text("Cards")').click();
+    // Auto download of statements
+    await page
+      .locator("#scroll-container a")
+      .filter({ hasText: "Cards" })
+      .click();
+    await page
+      .locator("#subContainer4 a")
+      .filter({ hasText: "Credit Cards" })
+      .click();
 
-    const downloadedStatements = await waitForManualStatementDownloads(
+    const downloadedStatements = await autoDownloadStatements(
       page,
       runDownloadDir,
     );
