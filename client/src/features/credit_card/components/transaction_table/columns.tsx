@@ -1,66 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table"
 import type { CreditCardTransaction } from "../../types"
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { useAddToEMI } from "../../hooks/useAddToEMI"
-
-const ActionsCell = ({ transaction }: { transaction: CreditCardTransaction }) => {
-    const addToEMIMutation = useAddToEMI();
-    return (
-        <div className="flex w-full justify-center">
-            <AlertDialog>
-                <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="sm">
-                        Add to EMI
-                    </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Add to EMI</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Are you sure you want to add this transaction to EMI?
-                            <br />
-                            <strong>{transaction.details}</strong> -{" "}
-                            {new Intl.NumberFormat("en-IN", {
-                                style: "currency",
-                                currency: "INR",
-                            }).format(Number(transaction.amount))}
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={() => {
-                                console.log("Adding to EMI:", transaction);
-                                // Call the mutation function to add to EMI
-                                // You can pass the necessary data from the transaction object
-                                // For example:
-                                addToEMIMutation.mutate({
-                                    bank: transaction.bank,
-                                    referenceNumber: transaction.referenceNumber,
-                                    statementStartDate: transaction.statementStartDate,
-                                });
-                            }}
-                        >
-                            Confirm
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-        </div>
-    );
-}
+import { ActionsCell, CategoryCell } from "./cells"
 
 export type Payment = CreditCardTransaction
 
@@ -135,6 +76,11 @@ export const columns: ColumnDef<CreditCardTransaction>[] = [
                 </div>
             )
         },
+    },
+    {
+        accessorKey: "category",
+        header: "Category",
+        cell: ({ row }) => <CategoryCell transaction={row.original} />,
     },
     {
         accessorKey: "type",

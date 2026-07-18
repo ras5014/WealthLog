@@ -1,7 +1,7 @@
 import z from "zod";
 
 export type CreditCardTransaction = {
-  id: number;
+  id: string;
   transactionDate: string;
   details: string;
   amount: string | number;
@@ -48,4 +48,9 @@ export type AddToEMIType = {
   bank: string;
   referenceNumber: string;
   statementStartDate: string;
+};
+
+export type UpdateTransactionCategoryType = {
+  id: string | number;
+  category: string;
 };

@@ -12,6 +12,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { PREFIXES_TO_EXCLUDE, CARD_DETAILS } from "../../config/constants.ts";
 import { calculateBillingCycleDates } from "../../lib/utils.ts";
 import { categorizeTransactions } from "../../lib/categorization.ts";
+import type { TransactionCategory } from "../../lib/categorization.ts";
 
 export const extractTransactionsFromPDF = async (
   pdfText: string,
@@ -96,7 +97,7 @@ export const extractTransactionsFromPDF = async (
   // 3. Extract the transaction section (everything after the table header)
   const headerPattern =
     /Transaction Date\s+Details\s+Amount \(INR\)\s+(?:Reward Points\s+)?Reference Number\s*\n/;
-  const headerMatch = headerPattern.exec(pdfText);
+  let headerMatch = headerPattern.exec(pdfText);
   if (headerMatch?.index == null) {
     const altHeaderPattern = /Transaction\s+Details/i;
     headerMatch = altHeaderPattern.exec(pdfText);
@@ -346,4 +347,20 @@ export const getAllLatestTransactions = async () => {
     : 0;
 
   return { transactions, totalDayPassed };
+};
+
+export const updateTransactionCategory = async (
+  transactionId: string,
+  category: TransactionCategory,
+) => {
+  const [transaction] = await db
+    .update(creditCardTransactions)
+    .set({ category })
+    .where(eq(creditCardTransactions.id, transactionId))
+    .returning({
+      id: creditCardTransactions.id,
+      category: creditCardTransactions.category,
+    });
+
+  return transaction;
 };
