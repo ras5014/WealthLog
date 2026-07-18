@@ -94,7 +94,7 @@ export const extractTransactionsFromPDF = async (
 
   // 3. Extract the transaction section (everything after the table header)
   const headerPattern =
-    /Transaction Date\s+Details\s+Amount \(INR\)\s+Reference Number\n/;
+    /Transaction Date\s+Details\s+Amount \(INR\)\s+(?:Reward Points\s+)?Reference Number\s*\n/;
   const headerMatch = headerPattern.exec(pdfText);
   if (headerMatch?.index == null) {
     throw new Error("Could not find transaction table header in the PDF");
