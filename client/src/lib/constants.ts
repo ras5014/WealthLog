@@ -36,7 +36,6 @@ export const TRANSACTION_CATEGORIES = [
 export const BUDGET_GROUPS = [
   {
     name: "Essentials",
-    targetPercentage: 50,
     categories: [
       "Groceries",
       "Fuel",
@@ -51,7 +50,6 @@ export const BUDGET_GROUPS = [
   },
   {
     name: "Entertainment",
-    targetPercentage: 30,
     categories: [
       "Food & Dining",
       "Travel",
@@ -59,15 +57,6 @@ export const BUDGET_GROUPS = [
       "Entertainment",
       "Cash Withdrawal",
       "Other",
-    ],
-  },
-  {
-    name: "Savings",
-    targetPercentage: 20,
-    categories: [
-      "Investments",
-      "Transfers",
-      "Credit/Refund",
     ],
   },
 ] as const;

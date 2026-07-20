@@ -25,7 +25,6 @@ type CategorySpendChartProps = {
 const budgetGroupColors: Record<BudgetGroupName, string> = {
     Essentials: "var(--chart-2)",
     Entertainment: "var(--chart-1)",
-    Savings: "var(--chart-3)",
 }
 
 const toCategoryKey = (category: string) =>
@@ -35,7 +34,6 @@ type BudgetGroupChartItem = {
     category: BudgetGroupName
     categoryKey: string
     spend: number
-    targetPercentage: number
     fill: string
     topCategories: string[]
 }
@@ -75,7 +73,6 @@ export default function CategorySpendChart({ transactions = [] }: CategorySpendC
                 category: group.name,
                 categoryKey: toCategoryKey(group.name),
                 spend: totals.get(group.name) ?? 0,
-                targetPercentage: group.targetPercentage,
                 fill: budgetGroupColors[group.name],
                 topCategories,
             } satisfies BudgetGroupChartItem
@@ -102,7 +99,7 @@ export default function CategorySpendChart({ transactions = [] }: CategorySpendC
                         <ChartPie className="mt-0.5 size-5 text-muted-foreground" />
                         <CardTitle className="text-base font-semibold">Category Spending</CardTitle>
                     </div>
-                    <CardDescription>Essentials, entertainment, and savings rollup</CardDescription>
+                    <CardDescription>Essentials and entertainment spend for this card cycle</CardDescription>
                 </div>
             </CardHeader>
             <CardContent className="space-y-4 pt-4">
@@ -169,7 +166,7 @@ export default function CategorySpendChart({ transactions = [] }: CategorySpendC
                                                         y={viewBox.cy + 18}
                                                         className="fill-muted-foreground text-[11px]"
                                                     >
-                                                        Allocated
+                                                        Tracked
                                                     </tspan>
                                                 </text>
                                             )
@@ -184,7 +181,6 @@ export default function CategorySpendChart({ transactions = [] }: CategorySpendC
                                 const percentage = totalSpend > 0
                                     ? Math.round((item.spend / totalSpend) * 100)
                                     : 0
-                                const targetDifference = percentage - item.targetPercentage
 
                                 return (
                                     <div
@@ -206,9 +202,6 @@ export default function CategorySpendChart({ transactions = [] }: CategorySpendC
                                         </span>
                                         <span className="col-start-2 min-w-0 truncate text-xs text-muted-foreground/75">
                                             {item.topCategories.length > 0 ? item.topCategories.join(", ") : "No detailed categories"}
-                                        </span>
-                                        <span className="col-span-2 text-right text-xs text-muted-foreground/75">
-                                            Target {item.targetPercentage}%{targetDifference === 0 ? "" : `, ${Math.abs(targetDifference)}% ${targetDifference > 0 ? "over" : "under"}`}
                                         </span>
                                     </div>
                                 )
