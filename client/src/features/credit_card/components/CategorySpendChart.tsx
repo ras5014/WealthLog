@@ -11,6 +11,12 @@ import {
     ChartTooltipContent,
     type ChartConfig,
 } from "@/components/ui/chart"
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { BUDGET_GROUPS, CATEGORY_TO_BUDGET_GROUP, type BudgetGroupName } from "@/lib/constants"
 import { formatCurrency } from "@/lib/utils"
 import { ChartPie } from "lucide-react"
@@ -30,16 +36,21 @@ const budgetGroupColors: Record<BudgetGroupName, string> = {
 const toCategoryKey = (category: string) =>
     category.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-").replaceAll(/(^-|-$)/g, "")
 
+const visibleSubCategoryCount = 4
+
 type BudgetGroupChartItem = {
     category: BudgetGroupName
     categoryKey: string
     spend: number
     fill: string
-    topCategories: string[]
+    subCategories: {
+        category: string
+        spend: number
+    }[]
 }
 
 export default function CategorySpendChart({ transactions = [] }: CategorySpendChartProps) {
-    const chartData = useMemo(() => {
+    const { chartData, subCategoryData } = useMemo(() => {
         const totals = new Map<BudgetGroupName, number>()
         const categoryTotals = new Map<BudgetGroupName, Map<string, number>>()
 
@@ -62,25 +73,55 @@ export default function CategorySpendChart({ transactions = [] }: CategorySpendC
             categoryTotals.set(group, groupCategories)
         }
 
-        return BUDGET_GROUPS.map((group) => {
+        const groupedData = BUDGET_GROUPS.map((group) => {
             const categories = categoryTotals.get(group.name) ?? new Map<string, number>()
-            const topCategories = Array.from(categories.entries())
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 3)
-                .map(([category]) => category)
+            const subCategories = Array.from(categories.entries())
+                .map(([category, spend]) => ({ category, spend }))
+                .sort((a, b) => b.spend - a.spend)
 
             return {
                 category: group.name,
                 categoryKey: toCategoryKey(group.name),
                 spend: totals.get(group.name) ?? 0,
                 fill: budgetGroupColors[group.name],
-                topCategories,
+                subCategories,
             } satisfies BudgetGroupChartItem
         }).filter((item) => item.spend > 0)
+            .reduce(
+                (result, item) => {
+                    result.chartData.push(item)
+                    result.subCategoryData.push(
+                        ...item.subCategories.map((subCategory) => ({
+                            ...subCategory,
+                            group: item.category,
+                            fill: item.fill,
+                            categoryKey: `${item.categoryKey}-${toCategoryKey(subCategory.category)}`,
+                        })),
+                    )
+
+                    return result
+                },
+                {
+                    chartData: [] as BudgetGroupChartItem[],
+                    subCategoryData: [] as {
+                        category: string
+                        categoryKey: string
+                        group: BudgetGroupName
+                        spend: number
+                        fill: string
+                    }[],
+                },
+            )
+
+        groupedData.subCategoryData.sort((a, b) => b.spend - a.spend)
+
+        return groupedData
     }, [transactions])
 
     const totalSpend = chartData.reduce((sum, item) => sum + item.spend, 0)
     const topCategory = chartData[0]
+    const visibleSubCategories = subCategoryData.slice(0, visibleSubCategoryCount)
+    const hiddenSubCategories = subCategoryData.slice(visibleSubCategoryCount)
 
     const chartConfig = chartData.reduce<ChartConfig>((config, item) => {
         config[item.categoryKey] = {
@@ -102,79 +143,151 @@ export default function CategorySpendChart({ transactions = [] }: CategorySpendC
                     <CardDescription>Essentials and entertainment spend for this card cycle</CardDescription>
                 </div>
             </CardHeader>
-            <CardContent className="space-y-4 pt-4">
+            <CardContent className="space-y-4 px-3 pt-3">
                 {chartData.length > 0 ? (
                     <>
-                        <ChartContainer
-                            config={chartConfig}
-                            className="mx-auto h-[220px] w-full"
-                        >
-                            <PieChart accessibilityLayer>
-                                <ChartTooltip
-                                    cursor={false}
-                                    content={
-                                        <ChartTooltipContent
-                                            hideLabel
-                                            nameKey="categoryKey"
-                                            formatter={(value, _name, item) => (
-                                                <div className="flex min-w-36 items-center justify-between gap-4">
-                                                    <span className="text-muted-foreground">
-                                                        {item.payload.category}
-                                                    </span>
-                                                    <span className="font-mono font-medium text-foreground">
-                                                        {formatCurrency(Number(value))}
-                                                    </span>
-                                                </div>
-                                            )}
-                                        />
-                                    }
-                                />
-                                <Pie
-                                    data={chartData}
-                                    dataKey="spend"
-                                    nameKey="categoryKey"
-                                    innerRadius={58}
-                                    outerRadius={86}
-                                    paddingAngle={2}
-                                    strokeWidth={4}
-                                >
-                                    {chartData.map((item) => (
-                                        <Cell key={item.categoryKey} fill={item.fill} />
-                                    ))}
-                                    <Label
-                                        content={({ viewBox }) => {
-                                            if (!viewBox || !("cx" in viewBox) || !("cy" in viewBox)) {
-                                                return null
-                                            }
-
-                                            return (
-                                                <text
-                                                    x={viewBox.cx}
-                                                    y={viewBox.cy}
-                                                    textAnchor="middle"
-                                                    dominantBaseline="middle"
-                                                >
-                                                    <tspan
-                                                        x={viewBox.cx}
-                                                        y={viewBox.cy - 8}
-                                                        className="fill-foreground text-lg font-semibold"
-                                                    >
-                                                        {formatCurrency(totalSpend)}
-                                                    </tspan>
-                                                    <tspan
-                                                        x={viewBox.cx}
-                                                        y={viewBox.cy + 18}
-                                                        className="fill-muted-foreground text-[11px]"
-                                                    >
-                                                        Tracked
-                                                    </tspan>
-                                                </text>
-                                            )
-                                        }}
+                        <div className="grid items-center gap-2 md:grid-cols-[250px_minmax(0,1fr)]">
+                            <ChartContainer
+                                config={chartConfig}
+                                className="-ml-2 h-[220px] w-[250px]"
+                            >
+                                <PieChart accessibilityLayer>
+                                    <ChartTooltip
+                                        cursor={false}
+                                        content={
+                                            <ChartTooltipContent
+                                                hideLabel
+                                                nameKey="categoryKey"
+                                                formatter={(value, _name, item) => (
+                                                    <div className="flex min-w-36 items-center justify-between gap-4">
+                                                        <span className="text-muted-foreground">
+                                                            {item.payload.category}
+                                                        </span>
+                                                        <span className="font-mono font-medium text-foreground">
+                                                            {formatCurrency(Number(value))}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            />
+                                        }
                                     />
-                                </Pie>
-                            </PieChart>
-                        </ChartContainer>
+                                    <Pie
+                                        data={chartData}
+                                        dataKey="spend"
+                                        nameKey="categoryKey"
+                                        innerRadius={58}
+                                        outerRadius={86}
+                                        paddingAngle={2}
+                                        strokeWidth={4}
+                                    >
+                                        {chartData.map((item) => (
+                                            <Cell key={item.categoryKey} fill={item.fill} />
+                                        ))}
+                                        <Label
+                                            content={({ viewBox }) => {
+                                                if (!viewBox || !("cx" in viewBox) || !("cy" in viewBox)) {
+                                                    return null
+                                                }
+
+                                                return (
+                                                    <text
+                                                        x={viewBox.cx}
+                                                        y={viewBox.cy}
+                                                        textAnchor="middle"
+                                                        dominantBaseline="middle"
+                                                    >
+                                                        <tspan
+                                                            x={viewBox.cx}
+                                                            y={viewBox.cy - 8}
+                                                            className="fill-foreground text-lg font-semibold"
+                                                        >
+                                                            {formatCurrency(totalSpend)}
+                                                        </tspan>
+                                                        <tspan
+                                                            x={viewBox.cx}
+                                                            y={viewBox.cy + 18}
+                                                            className="fill-muted-foreground text-[11px]"
+                                                        >
+                                                            Tracked
+                                                        </tspan>
+                                                    </text>
+                                                )
+                                            }}
+                                        />
+                                    </Pie>
+                                </PieChart>
+                            </ChartContainer>
+
+                            <div className="space-y-2 pr-1">
+                                {visibleSubCategories.map((item) => (
+                                    <div
+                                        key={item.categoryKey}
+                                        className="flex items-center gap-2 rounded-lg bg-background/45 px-2.5 py-2 text-xs"
+                                    >
+                                        <span
+                                            className="size-2 shrink-0 rounded-[2px]"
+                                            style={{ backgroundColor: item.fill }}
+                                        />
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate font-medium text-foreground">
+                                                {item.category}
+                                            </p>
+                                            <p className="truncate text-[11px] text-muted-foreground">
+                                                {item.group}
+                                            </p>
+                                        </div>
+                                        <span className="font-mono font-semibold text-foreground">
+                                            {formatCurrency(item.spend)}
+                                        </span>
+                                    </div>
+                                ))}
+                                {hiddenSubCategories.length > 0 && (
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <button
+                                                    type="button"
+                                                    className="flex w-full items-center justify-center rounded-lg border border-border/60 bg-background/45 px-2.5 py-2 text-xs font-medium text-muted-foreground transition hover:bg-background/70 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                                                >
+                                                    Show {hiddenSubCategories.length} more
+                                                </button>
+                                            </TooltipTrigger>
+                                            <TooltipContent
+                                                side="left"
+                                                align="start"
+                                                sideOffset={10}
+                                                className="block max-h-80 w-72 max-w-72 overflow-y-auto rounded-lg border border-border/70 bg-popover p-2 text-popover-foreground shadow-xl"
+                                            >
+                                                <div className="space-y-1.5">
+                                                    {subCategoryData.map((item) => (
+                                                        <div
+                                                            key={`full-${item.categoryKey}`}
+                                                            className="flex items-center gap-2 rounded-md bg-background/60 px-2.5 py-2 text-xs"
+                                                        >
+                                                            <span
+                                                                className="size-2 shrink-0 rounded-[2px]"
+                                                                style={{ backgroundColor: item.fill }}
+                                                            />
+                                                            <div className="min-w-0 flex-1">
+                                                                <p className="truncate font-medium text-foreground">
+                                                                    {item.category}
+                                                                </p>
+                                                                <p className="truncate text-[11px] text-muted-foreground">
+                                                                    {item.group}
+                                                                </p>
+                                                            </div>
+                                                            <span className="font-mono font-semibold text-foreground">
+                                                                {formatCurrency(item.spend)}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                )}
+                            </div>
+                        </div>
 
                         <div className="space-y-2">
                             {chartData.map((item) => {
@@ -201,7 +314,7 @@ export default function CategorySpendChart({ transactions = [] }: CategorySpendC
                                             {percentage}%
                                         </span>
                                         <span className="col-start-2 min-w-0 truncate text-xs text-muted-foreground/75">
-                                            {item.topCategories.length > 0 ? item.topCategories.join(", ") : "No detailed categories"}
+                                            {item.subCategories.length > 0 ? item.subCategories.slice(0, 3).map((category) => category.category).join(", ") : "No detailed categories"}
                                         </span>
                                     </div>
                                 )
