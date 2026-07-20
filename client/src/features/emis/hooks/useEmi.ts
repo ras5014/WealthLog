@@ -4,6 +4,7 @@ import type {
   CreateCustomEmiInput,
   EmiDashboardData,
   EmiInfoItem,
+  UpdateEmiDescriptionInput,
 } from "@/features/emis/type";
 import toast from "react-hot-toast";
 
@@ -24,6 +25,14 @@ const createCustomEmi = async (input: CreateCustomEmiInput) => {
 
 const deleteEmi = async (id: string) => {
   const response = await api.delete(`/emi/${id}`);
+  return response.data;
+};
+
+const updateEmiDescription = async ({
+  id,
+  description,
+}: UpdateEmiDescriptionInput) => {
+  const response = await api.patch(`/emi/${id}/description`, { description });
   return response.data;
 };
 
@@ -75,6 +84,23 @@ export const useDeleteEmi = () => {
     onError: (error) => {
       console.error("Error deleting EMI:", error);
       toast.error("Failed to delete EMI.");
+    },
+  });
+};
+
+export const useUpdateEmiDescription = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateEmiDescription,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["emi-info"] });
+      queryClient.invalidateQueries({ queryKey: ["emi-dashboard"] });
+      toast.success("EMI description updated.");
+    },
+    onError: (error) => {
+      console.error("Error updating EMI description:", error);
+      toast.error("Failed to update EMI description.");
     },
   });
 };

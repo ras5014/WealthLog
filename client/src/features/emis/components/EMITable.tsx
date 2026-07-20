@@ -1,5 +1,5 @@
 import { Fragment, useState } from "react";
-import { ChevronDown, ChevronRight, Landmark, Trash2 } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, Landmark, Pencil, Trash2, X } from "lucide-react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -20,8 +20,9 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
-import { useDeleteEmi, useEmiInfo } from "@/features/emis/hooks/useEmi";
+import { useDeleteEmi, useEmiInfo, useUpdateEmiDescription } from "@/features/emis/hooks/useEmi";
 import type { EmiInfoItem } from "../type";
 import AddCustomEmiDialog from "./AddCustomEmiDialog";
 
@@ -132,6 +133,116 @@ function DeleteEmiAction({ emi }: { emi: EmiInfoItem }) {
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
+    );
+}
+
+function EditableDescriptionCell({ emi }: { emi: EmiInfoItem }) {
+    const updateDescription = useUpdateEmiDescription();
+    const [isEditing, setIsEditing] = useState(false);
+    const [draft, setDraft] = useState(emi.description || emi.merchant || "");
+    const label = emi.description || emi.merchant || "Unknown";
+
+    const startEditing = () => {
+        setDraft(label);
+        setIsEditing(true);
+    };
+
+    const cancelEditing = () => {
+        setDraft(label);
+        setIsEditing(false);
+    };
+
+    const saveDescription = async () => {
+        const nextDescription = draft.trim();
+        if (!nextDescription || nextDescription === emi.description) {
+            cancelEditing();
+            return;
+        }
+
+        try {
+            await updateDescription.mutateAsync({
+                id: emi.id,
+                description: nextDescription,
+            });
+            setIsEditing(false);
+        } catch {
+            // The mutation already shows a toast; keep the input open for correction or retry.
+        }
+    };
+
+    if (isEditing) {
+        return (
+            <div
+                className="flex min-w-64 items-center gap-2"
+                onClick={(event) => event.stopPropagation()}
+            >
+                <Input
+                    value={draft}
+                    autoFocus
+                    maxLength={512}
+                    disabled={updateDescription.isPending}
+                    onChange={(event) => setDraft(event.target.value)}
+                    onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                            event.preventDefault();
+                            void saveDescription();
+                        }
+
+                        if (event.key === "Escape") {
+                            cancelEditing();
+                        }
+                    }}
+                />
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Save EMI description"
+                    disabled={updateDescription.isPending}
+                    onClick={() => void saveDescription()}
+                >
+                    <Check className="size-4" />
+                </Button>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Cancel editing"
+                    disabled={updateDescription.isPending}
+                    onClick={cancelEditing}
+                >
+                    <X className="size-4" />
+                </Button>
+            </div>
+        );
+    }
+
+    return (
+        <div className="group/description flex min-w-48 items-center gap-2">
+            <div className="min-w-0 flex-1">
+                <p className="truncate font-medium text-foreground">
+                    {label}
+                </p>
+                {emi.merchant && emi.description && (
+                    <p className="truncate text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                        {emi.merchant}
+                    </p>
+                )}
+            </div>
+            <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Edit EMI description"
+                className="opacity-0 transition group-hover/description:opacity-100 focus-visible:opacity-100"
+                onClick={(event) => {
+                    event.stopPropagation();
+                    startEditing();
+                }}
+            >
+                <Pencil className="size-4" />
+            </Button>
+        </div>
     );
 }
 
@@ -261,16 +372,7 @@ export default function EMITable() {
                                         )}
                                     </TableCell>
                                     <TableCell className="px-4 py-3">
-                                        <div className="min-w-48">
-                                            <p className="truncate font-medium text-foreground">
-                                                {emi.description || emi.merchant || "Unknown"}
-                                            </p>
-                                            {emi.merchant && emi.description && (
-                                                <p className="truncate text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                                                    {emi.merchant}
-                                                </p>
-                                            )}
-                                        </div>
+                                        <EditableDescriptionCell emi={emi} />
                                     </TableCell>
                                     <TableCell className="px-4 py-3">
                                         <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">

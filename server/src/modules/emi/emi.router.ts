@@ -8,6 +8,7 @@ import {
   getEmiInfo,
   synchronizeEMI_ICICI,
   autoSync_EMI_ICICI,
+  updateEmiDescription,
 } from "./emi.controller.ts";
 import { validateBody, validateParams } from "../../middlewares/validation.ts";
 import { z } from "zod";
@@ -50,6 +51,12 @@ router.post(
 
 router.get("/get-emi-info", getEmiInfo);
 router.get("/get-emi-dashboard", getEmiDashboard);
+router.patch(
+  "/:id/description",
+  validateParams(z.object({ id: z.string().uuid() })),
+  validateBody(z.object({ description: z.string().trim().min(1).max(512) })),
+  updateEmiDescription,
+);
 router.delete(
   "/:id",
   validateParams(z.object({ id: z.string().uuid() })),

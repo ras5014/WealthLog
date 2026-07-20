@@ -14,6 +14,7 @@ import {
   deleteEmiById,
   extractEmisFromPDF,
   getEmiDashboardData,
+  updateEmiDescriptionById,
 } from "./emi.service.ts";
 import { autoSyncEmiStatements } from "./emiAutoSync.service.ts";
 import { AppError } from "../../middlewares/errorHandler.ts";
@@ -64,6 +65,20 @@ export const deleteEmi = async (req: Request, res: Response) => {
   }
 
   res.status(200).json({ message: "EMI deleted successfully", id: result.id });
+};
+
+export const updateEmiDescription = async (req: Request, res: Response) => {
+  const emiId = req.params.id;
+  if (typeof emiId !== "string") {
+    throw new AppError("Invalid EMI id", 400);
+  }
+
+  const result = await updateEmiDescriptionById(emiId, req.body.description);
+  if (!result) {
+    throw new AppError("EMI not found", 404);
+  }
+
+  res.status(200).json(result);
 };
 
 export const synchronizeEMI_ICICI = async (req: Request, res: Response) => {

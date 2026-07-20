@@ -245,6 +245,26 @@ export const deleteEmiById = async (id: string) => {
   return deleted;
 };
 
+export const updateEmiDescriptionById = async (
+  id: string,
+  description: string,
+) => {
+  const [updated] = await db
+    .update(emiInfo)
+    .set({ description })
+    .where(eq(emiInfo.id, id))
+    .returning({
+      id: emiInfo.id,
+      description: emiInfo.description,
+    });
+
+  if (updated) {
+    await processAndSaveEmiRecords();
+  }
+
+  return updated;
+};
+
 export const extractEmisFromPDF = async (pdfText: string, bank: string) => {
   // 1. Extract merchant name
   const merchantRegex = /Selected Merchant\s*:(.*)/;

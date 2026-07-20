@@ -44,6 +44,11 @@ export type CreateCustomEmiInput = {
   paidInstallments: number;
 };
 
+export type UpdateEmiDescriptionInput = {
+  id: string;
+  description: string;
+};
+
 export type EmiDashboardData = {
   emiRecords: EmiRecord[];
   totalLoanAmount: number;
