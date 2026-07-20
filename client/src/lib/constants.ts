@@ -32,3 +32,55 @@ export const TRANSACTION_CATEGORIES = [
   "Transfers",
   "Other",
 ] as const;
+
+export const BUDGET_GROUPS = [
+  {
+    name: "Essentials",
+    targetPercentage: 50,
+    categories: [
+      "Groceries",
+      "Fuel",
+      "Bills & Utilities",
+      "Health",
+      "Education",
+      "Rent & Housing",
+      "Insurance",
+      "EMI",
+      "Fees & Charges",
+    ],
+  },
+  {
+    name: "Entertainment",
+    targetPercentage: 30,
+    categories: [
+      "Food & Dining",
+      "Travel",
+      "Shopping",
+      "Entertainment",
+      "Cash Withdrawal",
+      "Other",
+    ],
+  },
+  {
+    name: "Savings",
+    targetPercentage: 20,
+    categories: [
+      "Investments",
+      "Transfers",
+      "Credit/Refund",
+    ],
+  },
+] as const;
+
+export type BudgetGroupName = (typeof BUDGET_GROUPS)[number]["name"];
+
+export const CATEGORY_TO_BUDGET_GROUP = BUDGET_GROUPS.reduce(
+  (groups, group) => {
+    for (const category of group.categories) {
+      groups[category] = group.name;
+    }
+
+    return groups;
+  },
+  {} as Record<string, BudgetGroupName>
+);

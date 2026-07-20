@@ -20,6 +20,7 @@ export type TransactionsResponse = {
 };
 
 export type TotalSpentProps = {
+  totalSpendsAllBanks?: number;
   totalSpent?: number;
   burnRatePerDay?: number;
   lastMonthSameTimeSpend?: number;
@@ -42,6 +43,8 @@ export type BankDetailSchema = {
   totalAmountDue: number;
   billingCycleStartDate: string;
   billingCycleEndDate: string;
+  paymentDueDate?: string;
+  statementEndDate?: string;
 };
 
 export type AddToEMIType = {
