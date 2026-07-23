@@ -63,6 +63,17 @@ function getCycleInfo(
   return { label, sortKey };
 }
 
+function getPaymentMonthInfo(paymentDate: string) {
+  const date = new Date(paymentDate);
+  const month = date.getUTCMonth();
+  const year = date.getUTCFullYear();
+
+  return {
+    label: `Custom EMI (${MONTHS[month]} ${year})`,
+    sortKey: year * 12 + month,
+  };
+}
+
 export const processAndSaveEmiRecords = async () => {
   const emis = await db.select().from(emiInfo);
   const bankInfos = await db.select().from(creditCardBankInfo);
@@ -81,12 +92,13 @@ export const processAndSaveEmiRecords = async () => {
 
   for (const emi of emis) {
     const cycle = bankCycleMap.get(emi.bank);
-    if (!cycle) continue;
 
     const description = emi.description || emi.merchant || "Unknown";
 
     for (const installment of emi.amortizationSchedule ?? []) {
-      const { label, sortKey } = getCycleInfo(installment.paymentDate, cycle);
+      const { label, sortKey } = cycle
+        ? getCycleInfo(installment.paymentDate, cycle)
+        : getPaymentMonthInfo(installment.paymentDate);
 
       const existing = cycleMap.get(label);
       if (existing) {
@@ -146,6 +158,111 @@ export const getEmiDashboardData = async () => {
     remainingAmount:
       Math.round((totalLoanAmount - totalPaidAmount) * 100) / 100,
   };
+};
+
+type CreateCustomEmiInput = {
+  bank: string;
+  description: string;
+  merchant?: string;
+  totalAmount: number;
+  installmentAmount: number;
+  installmentCount: number;
+  firstPaymentDate: string;
+  paidInstallments: number;
+};
+
+const addMonths = (dateValue: string, monthOffset: number) => {
+  const date = new Date(`${dateValue}T00:00:00.000Z`);
+  const day = date.getUTCDate();
+  date.setUTCMonth(date.getUTCMonth() + monthOffset, 1);
+  const maxDay = new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0),
+  ).getUTCDate();
+  date.setUTCDate(Math.min(day, maxDay));
+
+  return date.toISOString().slice(0, 10);
+};
+
+export const createCustomEmi = async (input: CreateCustomEmiInput) => {
+  const principalPerInstallment = input.totalAmount / input.installmentCount;
+  const schedule = Array.from({ length: input.installmentCount }, (_, index) => {
+    const emiNo = index + 1;
+    const paymentStatus = emiNo <= input.paidInstallments ? "paid" : "pending";
+    const principalAmount =
+      index === input.installmentCount - 1
+        ? input.totalAmount - principalPerInstallment * index
+        : principalPerInstallment;
+    const interestAmount = Math.max(
+      0,
+      input.installmentAmount - principalAmount,
+    );
+
+    return {
+      emiNo,
+      transactionStatus: paymentStatus === "paid" ? "POST" : "NEW",
+      paymentDate: addMonths(input.firstPaymentDate, index),
+      principalAmount: Math.round(principalAmount * 100) / 100,
+      interestAmount: Math.round(interestAmount * 100) / 100,
+      installmentAmount: input.installmentAmount,
+      paymentStatus,
+    } satisfies {
+      emiNo: number;
+      transactionStatus: "POST" | "NEW";
+      paymentDate: string;
+      principalAmount: number;
+      interestAmount: number;
+      installmentAmount: number;
+      paymentStatus: "paid" | "pending";
+    };
+  });
+
+  const [created] = await db
+    .insert(emiInfo)
+    .values({
+      bank: input.bank,
+      description: input.description,
+      merchant: input.merchant || null,
+      totalAmount: input.totalAmount.toFixed(2),
+      amortizationSchedule: schedule,
+    })
+    .returning();
+
+  await processAndSaveEmiRecords();
+
+  return created;
+};
+
+export const deleteEmiById = async (id: string) => {
+  const [deleted] = await db
+    .delete(emiInfo)
+    .where(eq(emiInfo.id, id))
+    .returning({ id: emiInfo.id });
+
+  if (deleted) {
+    await processAndSaveEmiRecords();
+  }
+
+  return deleted;
+};
+
+export const updateEmiDescriptionById = async (
+  id: string,
+  description: string,
+) => {
+  const [updated] = await db
+    .update(emiInfo)
+    .set({ description })
+    .where(eq(emiInfo.id, id))
+    .returning({
+      id: emiInfo.id,
+      description: emiInfo.description,
+    });
+
+  if (updated) {
+    await processAndSaveEmiRecords();
+  }
+
+  return updated;
 };
 
 export const extractEmisFromPDF = async (pdfText: string, bank: string) => {

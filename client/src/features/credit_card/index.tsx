@@ -50,11 +50,10 @@ export default function Index() {
 
 
     const { data: bankDetails } = useBankDetails();
-    const dueDate = bankDetails?.find((detail: BankDetailSchema) => normalizeBankName(detail.bank) === normalizeBankName(bank))?.paymentDueDate || "";
+    const dueDate = bankDetails?.find((detail: BankDetailSchema) => normalizeBankName(detail.bank) === normalizeBankName(bank))?.paymentDueDate || bankDetails?.[0]?.paymentDueDate || "";
 
     const currentBillingCycle = transactions?.[0];
-    // const billingCycleEndDate = currentBillingCycle?.statementEndDate;
-    const billingCycleEndDate = bankDetails?.find((detail: BankDetailSchema) => normalizeBankName(detail.bank) === normalizeBankName(bank))?.statementEndDate || "";
+    const billingCycleEndDate = bankDetails?.find((detail: BankDetailSchema) => normalizeBankName(detail.bank) === normalizeBankName(bank))?.statementEndDate || bankDetails?.[0]?.statementEndDate || "";
 
 
     useEffect(() => {
@@ -65,9 +64,8 @@ export default function Index() {
 
 
     // Get the EMIs
-    const { data: emis, isPending: isEmiPending, isError: isEmiError } = useEmiInfo();
+    const { data: emis } = useEmiInfo();
     // Calculate expected EMI for this billing cycle
-    console.log("EMI data:", emis);
 
     const selectedBank = normalizeBankName(bank);
     const isAllBanks = bank === BANK_OPTIONS[0];
@@ -79,24 +77,28 @@ export default function Index() {
     const cycleEnd = isAllBanks ? bankDetails?.[0]?.billingCycleEndDate : selectedBankDetail?.billingCycleEndDate;
 
     const totalEmiAmountAllBanks = (emis ?? []).reduce((sum, emi) => {
-        return emi?.amortizationSchedule?.reduce((acc, installment) => {
+        const scheduleTotal = (emi.amortizationSchedule ?? []).reduce((acc, installment) => {
             if (cycleStart && cycleEnd && installment.paymentDate >= cycleStart && installment.paymentDate <= cycleEnd) {
                 return acc + Number(installment.installmentAmount);
             }
             return acc;
-        }, sum);
+        }, 0);
+
+        return sum + scheduleTotal;
     }, 0);
 
     const totalEmiAmount = isAllBanks ? totalEmiAmountAllBanks : (emis ?? []).reduce((sum, emi) => {
         const emiBank = normalizeBankName(emi.bank);
         if (emiBank !== selectedBank) return sum;
 
-        return emi?.amortizationSchedule?.reduce((acc, installment) => {
+        const scheduleTotal = (emi.amortizationSchedule ?? []).reduce((acc, installment) => {
             if (cycleStart && cycleEnd && installment.paymentDate >= cycleStart && installment.paymentDate <= cycleEnd) {
                 return acc + Number(installment.installmentAmount);
             }
             return acc;
-        }, sum);
+        }, 0);
+
+        return sum + scheduleTotal;
     }, 0);
 
     const totalDayPassedInCurrentCycle = totalDayPassed || 0;
@@ -121,7 +123,7 @@ export default function Index() {
                     dueDate={dueDate}
                     totalEmiAmount={totalEmiAmount}
                 />
-                <CategorySpendChart />
+                <CategorySpendChart transactions={filteredTransactions} />
             </div>
 
             <div className="mt-6">

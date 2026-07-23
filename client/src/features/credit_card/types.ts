@@ -1,7 +1,7 @@
 import z from "zod";
 
 export type CreditCardTransaction = {
-  id: number;
+  id: string;
   transactionDate: string;
   details: string;
   amount: string | number;
@@ -10,6 +10,8 @@ export type CreditCardTransaction = {
   statementStartDate: string;
   statementEndDate: string;
   bank: string;
+  description?: string;
+  category?: string;
 };
 
 export type TransactionsResponse = {
@@ -18,6 +20,7 @@ export type TransactionsResponse = {
 };
 
 export type TotalSpentProps = {
+  totalSpendsAllBanks?: number;
   totalSpent?: number;
   burnRatePerDay?: number;
   lastMonthSameTimeSpend?: number;
@@ -40,10 +43,17 @@ export type BankDetailSchema = {
   totalAmountDue: number;
   billingCycleStartDate: string;
   billingCycleEndDate: string;
+  paymentDueDate?: string;
+  statementEndDate?: string;
 };
 
 export type AddToEMIType = {
   bank: string;
   referenceNumber: string;
   statementStartDate: string;
+};
+
+export type UpdateTransactionCategoryType = {
+  id: string | number;
+  category: string;
 };

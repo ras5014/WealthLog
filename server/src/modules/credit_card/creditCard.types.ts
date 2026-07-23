@@ -9,6 +9,7 @@ export interface CreditCardTransaction {
   statementEndDate: string;
   bank: string;
   description?: string;
+  category?: string;
 }
 
 export interface ParsedStatementResult {

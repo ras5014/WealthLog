@@ -23,6 +23,7 @@ export const creditCardTransactions = pgTable(
     statementEndDate: date("statement_end_date").notNull(),
     bank: varchar("bank", { length: 64 }).notNull(),
     description: varchar("description", { length: 512 }),
+    category: varchar("category", { length: 128 }),
   },
   (table) => [
     uniqueIndex("uq_ref_statement").on(
@@ -53,6 +54,14 @@ export const creditCardBankInfo = pgTable("credit_card_bank_info", {
   billingCycleStartDate: date("billing_cycle_start_date").notNull(),
   billingCycleEndDate: date("billing_cycle_end_date").notNull(),
   statementEndDate: date("statement_end_date").notNull(),
+});
+
+export const previousCreditCardBills = pgTable("previous_credit_card_bills", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  bank: varchar("bank", { length: 64 }).notNull(),
+  month: varchar("month", { length: 32 }).notNull(),
+  year: numeric("year", { precision: 4, scale: 0 }).notNull(),
+  totalAmountDue: numeric("total_amount_due", { precision: 12, scale: 2 }),
 });
 
 export const emiInfo = pgTable("emi_info", {

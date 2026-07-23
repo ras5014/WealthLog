@@ -9,7 +9,13 @@ import { eq } from "drizzle-orm/sql/expressions/conditions";
 import { and } from "drizzle-orm";
 import { readFile, unlink } from "fs/promises";
 import { PDFParse } from "pdf-parse";
-import { extractEmisFromPDF, getEmiDashboardData } from "./emi.service.ts";
+import {
+  createCustomEmi,
+  deleteEmiById,
+  extractEmisFromPDF,
+  getEmiDashboardData,
+  updateEmiDescriptionById,
+} from "./emi.service.ts";
 import { autoSyncEmiStatements } from "./emiAutoSync.service.ts";
 import { AppError } from "../../middlewares/errorHandler.ts";
 
@@ -39,6 +45,39 @@ export const getEmiInfo = async (req: Request, res: Response) => {
 };
 export const getEmiDashboard = async (req: Request, res: Response) => {
   const result = await getEmiDashboardData();
+  res.status(200).json(result);
+};
+
+export const addCustomEmi = async (req: Request, res: Response) => {
+  const result = await createCustomEmi(req.body);
+  res.status(201).json(result);
+};
+
+export const deleteEmi = async (req: Request, res: Response) => {
+  const emiId = req.params.id;
+  if (typeof emiId !== "string") {
+    throw new AppError("Invalid EMI id", 400);
+  }
+
+  const result = await deleteEmiById(emiId);
+  if (!result) {
+    throw new AppError("EMI not found", 404);
+  }
+
+  res.status(200).json({ message: "EMI deleted successfully", id: result.id });
+};
+
+export const updateEmiDescription = async (req: Request, res: Response) => {
+  const emiId = req.params.id;
+  if (typeof emiId !== "string") {
+    throw new AppError("Invalid EMI id", 400);
+  }
+
+  const result = await updateEmiDescriptionById(emiId, req.body.description);
+  if (!result) {
+    throw new AppError("EMI not found", 404);
+  }
+
   res.status(200).json(result);
 };
 

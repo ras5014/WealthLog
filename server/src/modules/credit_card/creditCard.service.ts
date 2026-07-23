@@ -6,11 +6,18 @@ import db from "../../db/connection.ts";
 import {
   creditCardBankInfo,
   creditCardTransactions,
+  previousCreditCardBills,
   tempEmiRecords,
 } from "../../db/schema.ts";
 import { and, eq, inArray } from "drizzle-orm";
-import { PREFIXES_TO_EXCLUDE, CARD_DETAILS } from "../../config/constants.ts";
+import {
+  PREFIXES_TO_EXCLUDE,
+  CARD_DETAILS,
+  MONTHS,
+} from "../../config/constants.ts";
 import { calculateBillingCycleDates } from "../../lib/utils.ts";
+import { categorizeTransactions } from "../../lib/categorization.ts";
+import type { TransactionCategory } from "../../lib/categorization.ts";
 
 export const extractTransactionsFromPDF = async (
   pdfText: string,
@@ -95,14 +102,32 @@ export const extractTransactionsFromPDF = async (
   // 3. Extract the transaction section (everything after the table header)
   const headerPattern =
     /Transaction Date\s+Details\s+Amount \(INR\)\s+(?:Reward Points\s+)?Reference Number\s*\n/;
-  const headerMatch = headerPattern.exec(pdfText);
+  let headerMatch = headerPattern.exec(pdfText);
   if (headerMatch?.index == null) {
-    throw new Error("Could not find transaction table header in the PDF");
+    const altHeaderPattern = /Transaction\s+Details/i;
+    headerMatch = altHeaderPattern.exec(pdfText);
+  }
+
+  if (headerMatch?.index == null) {
+    // More helpful error message with debugging info
+    const textPreview = pdfText.substring(0, 800);
+    console.error("PDF text preview (first 800 chars):", textPreview);
+    console.error("Looking for transaction table header with patterns:");
+    console.error(
+      "1. Primary: Transaction Date...Details...Amount (INR)...Reference Number",
+    );
+    console.error("2. Fallback: Transaction Details");
+    throw new Error(
+      `Could not find transaction table header in the PDF. Expected format: "Transaction Date Details Amount (INR) Reference Number"`,
+    );
   }
 
   let transactionText = pdfText.slice(
     headerMatch.index + headerMatch[0].length,
   );
+
+  console.log("Header match found:", headerMatch[0]);
+  console.log("Transaction text length:", transactionText.length);
 
   // 4. Remove page break markers (e.g. "-- 1 of 3 --")
   transactionText = transactionText.replaceAll(
@@ -143,6 +168,16 @@ export const extractTransactionsFromPDF = async (
       statementEndDate,
       bank,
     });
+  }
+
+  console.log(
+    `Parsed ${allTransactions.length} transactions, ${emiExcludedCount} EMI transactions excluded`,
+  );
+  if (allTransactions.length === 0) {
+    console.warn(
+      "No transactions found in statement. Transaction text preview:",
+    );
+    console.warn(transactionText.substring(0, 500));
   }
 
   // 7. Deduplicate against existing DB records for this statement period
@@ -193,11 +228,13 @@ export const extractTransactionsFromPDF = async (
     (t) => !existingRefs.has(t.referenceNumber),
   );
   const duplicateCount = transactionsForDedup.length - newTransactions.length;
+  const categorizedNewTransactions =
+    await categorizeTransactions(newTransactions);
 
   // 8. Persist new transactions to the database
-  if (newTransactions.length > 0) {
+  if (categorizedNewTransactions.length > 0) {
     await db.insert(creditCardTransactions).values(
-      newTransactions.map((t) => ({
+      categorizedNewTransactions.map((t) => ({
         transactionDate: t.transactionDate.split("-").reverse().join("-"), // DD-MM-YYYY -> YYYY-MM-DD
         details: t.details,
         amount: t.amount.toString(),
@@ -206,6 +243,8 @@ export const extractTransactionsFromPDF = async (
         statementStartDate: t.statementStartDate.split("-").reverse().join("-"), // DD-MM-YYYY -> YYYY-MM-DD
         statementEndDate: t.statementEndDate.split("-").reverse().join("-"), // DD-MM-YYYY -> YYYY-MM-DD
         bank,
+        description: t.description,
+        category: t.category,
       })),
     );
   }
@@ -249,6 +288,15 @@ export const extractTransactionsFromPDF = async (
     await db.insert(creditCardBankInfo).values(bankInfoPayload);
   }
 
+  if (isPreviousMonthStatement && paymentDueDate && totalAmountDue) {
+    await db.insert(previousCreditCardBills).values({
+      bank,
+      month: MONTHS[parseInt(paymentDueDate.split("-")[1], 10) - 1], // Extract month from DD-MM-YYYY
+      year: paymentDueDate.split("-")[2], // Extract year from DD-MM-YYYY
+      totalAmountDue: totalAmountDue.toString(),
+    });
+  }
+
   return {
     cardHolderName,
     cardNumber,
@@ -257,7 +305,7 @@ export const extractTransactionsFromPDF = async (
     totalAmountDue,
     ...(paymentDueDate && { paymentDueDate }),
     ...(minimumAmountDue != null && { minimumAmountDue }),
-    newTransactions,
+    newTransactions: categorizedNewTransactions,
     duplicateCount,
     totalTransactionsParsed: allTransactions.length + emiExcludedCount,
     emiExcludedCount,
@@ -293,6 +341,8 @@ export const getAllLatestTransactions = async () => {
       statementStartDate: true,
       statementEndDate: true,
       bank: true,
+      description: true,
+      category: true,
     },
     where: (transactions, { eq }) =>
       eq(
@@ -311,4 +361,20 @@ export const getAllLatestTransactions = async () => {
     : 0;
 
   return { transactions, totalDayPassed };
+};
+
+export const updateTransactionCategory = async (
+  transactionId: string,
+  category: TransactionCategory,
+) => {
+  const [transaction] = await db
+    .update(creditCardTransactions)
+    .set({ category })
+    .where(eq(creditCardTransactions.id, transactionId))
+    .returning({
+      id: creditCardTransactions.id,
+      category: creditCardTransactions.category,
+    });
+
+  return transaction;
 };

@@ -30,10 +30,10 @@ type EmiForeCastingProps = Readonly<{
 }>;
 
 type AxisTickProps = {
-    x?: number;
-    y?: number;
+    x?: number | string;
+    y?: number | string;
     payload?: {
-        value?: string;
+        value?: number | string;
     };
 };
 
@@ -62,7 +62,7 @@ const parseMonthKeyFromRecordLabel = (label: string) => {
 };
 
 const renderLabelTick = ({ x = 0, y = 0, payload }: AxisTickProps) => {
-    const label = payload?.value ?? "";
+    const label = payload?.value != null ? String(payload.value) : "";
 
     return (
         <g transform={`translate(${x},${y})`}>

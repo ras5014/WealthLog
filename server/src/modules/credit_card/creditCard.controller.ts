@@ -4,6 +4,7 @@ import { readFile, unlink } from "node:fs/promises";
 import {
   extractTransactionsFromPDF,
   getAllLatestTransactions,
+  updateTransactionCategory,
 } from "./creditCard.service.ts";
 import { autoSyncIciciStatements } from "./iciciAutoSync.service.ts";
 import db from "../../db/connection.ts";
@@ -52,6 +53,27 @@ export const process_ICICIStatement = async (req: Request, res: Response) => {
 export const getTransactions = async (req: Request, res: Response) => {
   const result = await getAllLatestTransactions();
   res.status(200).json(result);
+};
+
+export const updateCreditCardTransactionCategory = async (
+  req: Request,
+  res: Response,
+) => {
+  const transactionId = req.params.id;
+  if (typeof transactionId !== "string") {
+    throw new AppError("Invalid transaction id", 400);
+  }
+
+  const transaction = await updateTransactionCategory(
+    transactionId,
+    req.body.category,
+  );
+
+  if (!transaction) {
+    throw new AppError("Transaction not found", 404);
+  }
+
+  res.status(200).json(transaction);
 };
 
 export const getCreditInfo = async (req: Request, res: Response) => {
