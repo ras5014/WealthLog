@@ -8,6 +8,9 @@ export const EMI_BANK_OPTIONS = [
   "ICICI_CORAL",
   "ICICI_AMZNPAY",
   "IDFC Bank",
+  "AXIS Bank",
+  "HDFC Bank",
+  "SBI Bank",
 ] as const;
 
 export const CREDIT_CARD_TRANSACTIONS_PER_PAGE = 10;
@@ -71,5 +74,5 @@ export const CATEGORY_TO_BUDGET_GROUP = BUDGET_GROUPS.reduce(
 
     return groups;
   },
-  {} as Record<string, BudgetGroupName>
+  {} as Record<string, BudgetGroupName>,
 );

@@ -8,6 +8,8 @@ import { extractTransactionsFromPDF } from "./creditCard.service.ts";
 import type { ParsedStatementResult } from "./creditCard.types.ts";
 
 const ICICI_LOGIN_URL = "https://retailnetbanking.icici.bank.in/login-page";
+const MANUAL_DOWNLOAD_TIMEOUT_MS = 15 * 60 * 1000;
+const EXPECTED_STATEMENT_DOWNLOADS = 2;
 const ICICI_BANK_BY_DOWNLOAD_INDEX = ["ICICI_CORAL", "ICICI_AMZNPAY"] as const;
 
 type DownloadedStatement = {
@@ -62,56 +64,32 @@ const saveManualStatementDownload = async (
   };
 };
 
-const triggerAndCaptureDownload = async (
-  page: Page,
-  runDownloadDir: string,
-  index: number,
-): Promise<DownloadedStatement> => {
-  // Set up download listener BEFORE clicking
-  const downloadPromise = page.waitForEvent("download");
-
-  // Click download button to trigger download
-  await page.getByRole("button", { name: "download" }).click();
-
-  // Wait for download to complete
-  const download = await downloadPromise;
-  console.log(`Download ${index} received: ${download.suggestedFilename()}`);
-
-  return saveManualStatementDownload(download, runDownloadDir, index);
-};
-
-const autoDownloadStatements = async (
+const waitForManualStatementDownloads = async (
   page: Page,
   runDownloadDir: string,
 ): Promise<DownloadedStatement[]> => {
   const downloadedStatements: DownloadedStatement[] = [];
+  const startedAt = Date.now();
 
-  try {
-    // First download - Coral card
-    console.log("Triggering download for Coral card...");
+  while (downloadedStatements.length < EXPECTED_STATEMENT_DOWNLOADS) {
+    const remainingMs = MANUAL_DOWNLOAD_TIMEOUT_MS - (Date.now() - startedAt);
+
+    if (remainingMs <= 0) {
+      throw new Error(
+        `Timed out waiting for ${EXPECTED_STATEMENT_DOWNLOADS} ICICI statement downloads. Captured ${downloadedStatements.length}.`,
+      );
+    }
+
+    const download = await page.waitForEvent("download", {
+      timeout: remainingMs,
+    });
+
     downloadedStatements.push(
-      await triggerAndCaptureDownload(page, runDownloadDir, 1),
-    );
-    console.log("Coral card statement downloaded successfully");
-
-    // Small delay to ensure page is ready for card switch
-    await page.waitForTimeout(1000);
-
-    // Click Amazon Pay card to switch
-    console.log("Switching to Amazon Pay card...");
-    await page.getByTitle("Amazon Pay ICICI Bank VISA-").click();
-    await page.waitForTimeout(1000); // Wait for page to load the new card
-
-    // Second download - Amazon Pay card
-    console.log("Triggering download for Amazon Pay card...");
-    downloadedStatements.push(
-      await triggerAndCaptureDownload(page, runDownloadDir, 2),
-    );
-    console.log("Amazon Pay card statement downloaded successfully");
-  } catch (error) {
-    console.error("Error during auto download:", error);
-    throw new Error(
-      `Failed to download ICICI statements: ${error instanceof Error ? error.message : "Unknown error"}`,
+      await saveManualStatementDownload(
+        download,
+        runDownloadDir,
+        downloadedStatements.length + 1,
+      ),
     );
   }
 
@@ -157,11 +135,6 @@ const processDownloadedStatement = async (
       ) {
         result = await extractTransactionsFromPDF(pdfData.text, statement.bank);
       } else {
-        // Provide more context when PDF parsing fails
-        console.error(
-          `PDF parsing failed for ${statement.card} card (${statement.bank}):`,
-          error,
-        );
         throw error;
       }
     }
@@ -203,17 +176,10 @@ export const autoSyncIciciStatements = async (
       await autoLoginIcici(page);
     }
 
-    // Auto download of statements
-    await page
-      .locator("#scroll-container a")
-      .filter({ hasText: "Cards" })
-      .click();
-    await page
-      .locator("#subContainer4 a")
-      .filter({ hasText: "Credit Cards" })
-      .click();
+    // Temp
+    // await page.locator('a:has-text("Cards")').click();
 
-    const downloadedStatements = await autoDownloadStatements(
+    const downloadedStatements = await waitForManualStatementDownloads(
       page,
       runDownloadDir,
     );

@@ -6,10 +6,15 @@ import db from "../../db/connection.ts";
 import {
   creditCardBankInfo,
   creditCardTransactions,
+  previousCreditCardBills,
   tempEmiRecords,
 } from "../../db/schema.ts";
 import { and, eq, inArray } from "drizzle-orm";
-import { PREFIXES_TO_EXCLUDE, CARD_DETAILS } from "../../config/constants.ts";
+import {
+  PREFIXES_TO_EXCLUDE,
+  CARD_DETAILS,
+  MONTHS,
+} from "../../config/constants.ts";
 import { calculateBillingCycleDates } from "../../lib/utils.ts";
 import { categorizeTransactions } from "../../lib/categorization.ts";
 import type { TransactionCategory } from "../../lib/categorization.ts";
@@ -281,6 +286,15 @@ export const extractTransactionsFromPDF = async (
       .where(eq(creditCardBankInfo.bank, existingBankInfo.bank));
   } else {
     await db.insert(creditCardBankInfo).values(bankInfoPayload);
+  }
+
+  if (isPreviousMonthStatement && paymentDueDate && totalAmountDue) {
+    await db.insert(previousCreditCardBills).values({
+      bank,
+      month: MONTHS[parseInt(paymentDueDate.split("-")[1], 10) - 1], // Extract month from DD-MM-YYYY
+      year: paymentDueDate.split("-")[2], // Extract year from DD-MM-YYYY
+      totalAmountDue: totalAmountDue.toString(),
+    });
   }
 
   return {
