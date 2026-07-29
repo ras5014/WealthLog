@@ -8,6 +8,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod"; // For Zod schema generation
+import id from "zod/v4/locales/id.cjs";
 
 // Credit Card Schemas
 export const creditCardTransactions = pgTable(
@@ -130,3 +131,50 @@ export const TempEmiRecordsInsertSchema = createInsertSchema(tempEmiRecords);
 export const TempEmiRecordsSelectSchema = createSelectSchema(tempEmiRecords);
 
 // Savings Account Schemas
+export const savingsAccountTransactions = pgTable(
+  "savings_account_transactions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    serialNumber: numeric("serial_number", {
+      precision: 10,
+      scale: 0,
+    }).notNull(),
+    transactionDate: date("transaction_date").notNull(),
+    remarks: varchar("remarks", { length: 512 }).notNull(),
+    accountNumber: varchar("account_number", { length: 32 }).notNull(),
+    referenceNumber: varchar("reference_number", { length: 64 }),
+    type: varchar("type", {
+      length: 16,
+      enum: ["Withdrawal", "Deposit"],
+    }).notNull(),
+    amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+    balance: numeric("balance", { precision: 12, scale: 2 }).notNull(),
+    transactionKey: varchar("transaction_key", { length: 64 }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("uq_savings_account_transaction_key").on(
+      table.transactionKey,
+    ),
+  ],
+);
+
+export const savingsAccountInfo = pgTable("savings_account_info", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  bank: varchar("bank", { length: 64 }).notNull().unique(),
+  openingBalance: numeric("opening_balance", {
+    precision: 12,
+    scale: 2,
+  }).notNull(),
+  closingBalance: numeric("closing_balance", {
+    precision: 12,
+    scale: 2,
+  }).notNull(),
+  totalWithdrawals: numeric("total_withdrawals", {
+    precision: 12,
+    scale: 2,
+  }).notNull(),
+  totalDeposits: numeric("total_deposits", {
+    precision: 12,
+    scale: 2,
+  }).notNull(),
+});

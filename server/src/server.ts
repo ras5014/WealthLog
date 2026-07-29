@@ -19,6 +19,11 @@ app.use(
 
 app.use("/api/v1/emi", (await import("./modules/emi/emi.router.ts")).default);
 
+app.use(
+  "/api/v1/savings",
+  (await import("./modules/savings/savings.router.ts")).default,
+);
+
 app.use(errorHandler);
 app.use(notFound);
 
