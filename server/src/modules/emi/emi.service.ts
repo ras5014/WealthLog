@@ -265,6 +265,51 @@ export const updateEmiDescriptionById = async (
   return updated;
 };
 
+export const updateEmiInstallmentStatusById = async (
+  id: string,
+  emiNo: number,
+  paymentStatus: "paid" | "pending",
+) => {
+  const existing = await db.query.emiInfo.findFirst({
+    where: (emi, { eq }) => eq(emi.id, id),
+  });
+
+  if (!existing?.amortizationSchedule) {
+    return null;
+  }
+
+  let didUpdate = false;
+  const amortizationSchedule = existing.amortizationSchedule.map((item) => {
+    if (item.emiNo !== emiNo) {
+      return item;
+    }
+
+    didUpdate = true;
+    const transactionStatus: "POST" | "NEW" =
+      paymentStatus === "paid" ? "POST" : "NEW";
+
+    return {
+      ...item,
+      paymentStatus,
+      transactionStatus,
+    };
+  });
+
+  if (!didUpdate) {
+    return null;
+  }
+
+  const [updated] = await db
+    .update(emiInfo)
+    .set({ amortizationSchedule })
+    .where(eq(emiInfo.id, id))
+    .returning();
+
+  await processAndSaveEmiRecords();
+
+  return updated;
+};
+
 export const extractEmisFromPDF = async (pdfText: string, bank: string) => {
   // 1. Extract merchant name
   const merchantRegex = /Selected Merchant\s*:(.*)/;

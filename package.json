@@ -1,0 +1,24 @@
+{
+  "name": "wealthlog",
+  "version": "1.0.0",
+  "description": "--- - Upload all credit card current billing cycle statements     1. ICICI CORAL     2. ICICI AMZNPAY     3. Flipkart Axis (To be added later)     4. IDFC First Bank (Some Investigation Needed, To be added later)     5. IndusInd (To be added later)     6. HDFC Pixel Play (To be added later)     7. HDFC Normal (To be added later) - Process them and store the transaction data and other important information and store them in DB     1. Statement Period     2. Transaction Details",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently -k -n server,client \"npm --prefix server run dev\" \"npm --prefix client run dev\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ras5014/WealthLog.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ras5014/WealthLog/issues"
+  },
+  "homepage": "https://github.com/ras5014/WealthLog#readme",
+  "devDependencies": {
+    "concurrently": "^10.0.4"
+  }
+}

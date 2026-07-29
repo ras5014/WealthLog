@@ -8,8 +8,8 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod"; // For Zod schema generation
-import { minimum } from "zod/mini";
 
+// Credit Card Schemas
 export const creditCardTransactions = pgTable(
   "credit_card_transactions",
   {
@@ -128,3 +128,5 @@ export const EmiRecordsSelectSchema = createSelectSchema(emiRecords);
 
 export const TempEmiRecordsInsertSchema = createInsertSchema(tempEmiRecords);
 export const TempEmiRecordsSelectSchema = createSelectSchema(tempEmiRecords);
+
+// Savings Account Schemas

@@ -15,6 +15,7 @@ import {
   extractEmisFromPDF,
   getEmiDashboardData,
   updateEmiDescriptionById,
+  updateEmiInstallmentStatusById,
 } from "./emi.service.ts";
 import { autoSyncEmiStatements } from "./emiAutoSync.service.ts";
 import { AppError } from "../../middlewares/errorHandler.ts";
@@ -76,6 +77,30 @@ export const updateEmiDescription = async (req: Request, res: Response) => {
   const result = await updateEmiDescriptionById(emiId, req.body.description);
   if (!result) {
     throw new AppError("EMI not found", 404);
+  }
+
+  res.status(200).json(result);
+};
+
+export const updateEmiInstallmentStatus = async (
+  req: Request,
+  res: Response,
+) => {
+  const emiId = req.params.id;
+  const emiNo = Number(req.params.emiNo);
+
+  if (typeof emiId !== "string" || !Number.isInteger(emiNo)) {
+    throw new AppError("Invalid EMI installment", 400);
+  }
+
+  const result = await updateEmiInstallmentStatusById(
+    emiId,
+    emiNo,
+    req.body.paymentStatus,
+  );
+
+  if (!result) {
+    throw new AppError("EMI installment not found", 404);
   }
 
   res.status(200).json(result);

@@ -5,6 +5,7 @@ import type {
   EmiDashboardData,
   EmiInfoItem,
   UpdateEmiDescriptionInput,
+  UpdateEmiInstallmentStatusInput,
 } from "@/features/emis/type";
 import toast from "react-hot-toast";
 
@@ -33,6 +34,17 @@ const updateEmiDescription = async ({
   description,
 }: UpdateEmiDescriptionInput) => {
   const response = await api.patch(`/emi/${id}/description`, { description });
+  return response.data;
+};
+
+const updateEmiInstallmentStatus = async ({
+  id,
+  emiNo,
+  paymentStatus,
+}: UpdateEmiInstallmentStatusInput) => {
+  const response = await api.patch(`/emi/${id}/installments/${emiNo}/status`, {
+    paymentStatus,
+  });
   return response.data;
 };
 
@@ -101,6 +113,23 @@ export const useUpdateEmiDescription = () => {
     onError: (error) => {
       console.error("Error updating EMI description:", error);
       toast.error("Failed to update EMI description.");
+    },
+  });
+};
+
+export const useUpdateEmiInstallmentStatus = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateEmiInstallmentStatus,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["emi-info"] });
+      queryClient.invalidateQueries({ queryKey: ["emi-dashboard"] });
+      toast.success("EMI installment status updated.");
+    },
+    onError: (error) => {
+      console.error("Error updating EMI installment status:", error);
+      toast.error("Failed to update EMI installment status.");
     },
   });
 };

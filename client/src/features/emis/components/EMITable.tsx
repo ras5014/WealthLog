@@ -1,5 +1,5 @@
 import { Fragment, useState } from "react";
-import { Check, ChevronDown, ChevronRight, Landmark, Pencil, Trash2, X } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, Landmark, Pencil, RotateCcw, Trash2, X } from "lucide-react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -22,13 +22,14 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
-import { useDeleteEmi, useEmiInfo, useUpdateEmiDescription } from "@/features/emis/hooks/useEmi";
+import { useDeleteEmi, useEmiInfo, useUpdateEmiDescription, useUpdateEmiInstallmentStatus } from "@/features/emis/hooks/useEmi";
 import type { EmiInfoItem } from "../type";
 import AddCustomEmiDialog from "./AddCustomEmiDialog";
 
 function AmortizationTable({ emi }: { emi: EmiInfoItem }) {
     const schedule = emi.amortizationSchedule ?? [];
     const label = emi.description || emi.merchant || "Unknown";
+    const updateInstallmentStatus = useUpdateEmiInstallmentStatus();
 
     return (
         <TableRow className="hover:bg-transparent">
@@ -46,6 +47,7 @@ function AmortizationTable({ emi }: { emi: EmiInfoItem }) {
                                 <TableHead className="h-10 px-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Interest</TableHead>
                                 <TableHead className="h-10 px-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Installment</TableHead>
                                 <TableHead className="h-10 px-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Status</TableHead>
+                                <TableHead className="h-10 px-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground text-right">Action</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -85,6 +87,34 @@ function AmortizationTable({ emi }: { emi: EmiInfoItem }) {
                                         >
                                             {item.paymentStatus === "paid" ? "Paid" : "Pending"}
                                         </span>
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3 text-right">
+                                        <Button
+                                            type="button"
+                                            variant={item.paymentStatus === "paid" ? "ghost" : "outline"}
+                                            size="sm"
+                                            disabled={updateInstallmentStatus.isPending}
+                                            onClick={(event) => {
+                                                event.stopPropagation();
+                                                updateInstallmentStatus.mutate({
+                                                    id: emi.id,
+                                                    emiNo: item.emiNo,
+                                                    paymentStatus: item.paymentStatus === "paid" ? "pending" : "paid",
+                                                });
+                                            }}
+                                        >
+                                            {item.paymentStatus === "paid" ? (
+                                                <>
+                                                    <RotateCcw className="size-4" />
+                                                    Mark pending
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Check className="size-4" />
+                                                    Mark paid
+                                                </>
+                                            )}
+                                        </Button>
                                     </TableCell>
                                 </TableRow>
                             ))}

@@ -49,6 +49,12 @@ export type UpdateEmiDescriptionInput = {
   description: string;
 };
 
+export type UpdateEmiInstallmentStatusInput = {
+  id: string;
+  emiNo: number;
+  paymentStatus: "paid" | "pending";
+};
+
 export type EmiDashboardData = {
   emiRecords: EmiRecord[];
   totalLoanAmount: number;

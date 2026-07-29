@@ -128,6 +128,7 @@ export const extractTransactionsFromPDF = async (
 
   console.log("Header match found:", headerMatch[0]);
   console.log("Transaction text length:", transactionText.length);
+  const hasRewardPointsColumn = /Reward Points/i.test(headerMatch[0]);
 
   // 4. Remove page break markers (e.g. "-- 1 of 3 --")
   transactionText = transactionText.replaceAll(
@@ -136,9 +137,10 @@ export const extractTransactionsFromPDF = async (
   );
 
   // 5. Parse individual transactions
-  // Each transaction: DATE  DETAILS(multiline)  AMOUNT Dr.|Cr. REFERENCE
-  const txnRegex =
-    /(\d{2}-\d{2}-\d{4})\s+([\s\S]*?)\s+(\d[\d,]*(?:\.\d{1,2})?)\s+(Dr\.|Cr\.)\s+(\d+)/g;
+  // Reward points statements contain both reward points and reference number after Dr./Cr.
+  const txnRegex = hasRewardPointsColumn
+    ? /(\d{2}-\d{2}-\d{4})\s+([\s\S]*?)\s+(\d[\d,]*(?:\.\d{1,2})?)\s+(Dr\.|Cr\.)\s+(-?\d+)\s+(\d+)/g
+    : /(\d{2}-\d{2}-\d{4})\s+([\s\S]*?)\s+(\d[\d,]*(?:\.\d{1,2})?)\s+(Dr\.|Cr\.)\s+(\d+)/g;
 
   const allTransactions: CreditCardTransaction[] = [];
   let emiExcludedCount = 0;
@@ -163,7 +165,7 @@ export const extractTransactionsFromPDF = async (
       details,
       amount: Number.parseFloat(match[3].replaceAll(",", "")),
       type: match[4] === "Dr." ? "Dr" : "Cr",
-      referenceNumber: match[5],
+      referenceNumber: hasRewardPointsColumn ? match[6] : match[5],
       statementStartDate,
       statementEndDate,
       bank,
@@ -213,6 +215,7 @@ export const extractTransactionsFromPDF = async (
         .from(creditCardTransactions)
         .where(
           and(
+            eq(creditCardTransactions.bank, bank),
             eq(
               creditCardTransactions.statementStartDate,
               normalizedStatementStartDate,

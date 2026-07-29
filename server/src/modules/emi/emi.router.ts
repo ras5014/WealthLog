@@ -9,6 +9,7 @@ import {
   synchronizeEMI_ICICI,
   autoSync_EMI_ICICI,
   updateEmiDescription,
+  updateEmiInstallmentStatus,
 } from "./emi.controller.ts";
 import { validateBody, validateParams } from "../../middlewares/validation.ts";
 import { z } from "zod";
@@ -56,6 +57,17 @@ router.patch(
   validateParams(z.object({ id: z.string().uuid() })),
   validateBody(z.object({ description: z.string().trim().min(1).max(512) })),
   updateEmiDescription,
+);
+router.patch(
+  "/:id/installments/:emiNo/status",
+  validateParams(
+    z.object({
+      id: z.string().uuid(),
+      emiNo: z.coerce.number().int().min(1),
+    }),
+  ),
+  validateBody(z.object({ paymentStatus: z.enum(["paid", "pending"]) })),
+  updateEmiInstallmentStatus,
 );
 router.delete(
   "/:id",

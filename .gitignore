@@ -1,7 +1,1 @@
-# Environment files
-.env
-**/.env
-
-# Keep example env templates versioned
-!.env.example
-!**/.env.example
+node_modules/
