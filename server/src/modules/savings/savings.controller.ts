@@ -2,7 +2,11 @@ import type { Request, Response } from "express";
 import { AppError } from "../../middlewares/errorHandler.ts";
 import { readFile, unlink } from "fs/promises";
 import { PDFParse } from "pdf-parse";
-import { extractinfoFromICICI_savingsStatement } from "./savings.service.ts";
+import {
+  extractinfoFromICICI_savingsStatement,
+  getAllLatestSavingsTransactions,
+  getSavingsAccountInfo,
+} from "./savings.service.ts";
 
 export const process_ICICI_Savings_Statement = async (
   req: Request,
@@ -27,4 +31,14 @@ export const process_ICICI_Savings_Statement = async (
     await parser.destroy();
     await unlink(filePath).catch(() => undefined);
   }
+};
+
+export const getSavingsTransactions = async (req: Request, res: Response) => {
+  const result = await getAllLatestSavingsTransactions();
+  res.status(200).json(result);
+};
+
+export const getSavingsAccountInfoHandler = async (req: Request, res: Response) => {
+  const result = await getSavingsAccountInfo();
+  res.status(200).json(result);
 };

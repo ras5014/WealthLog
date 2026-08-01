@@ -141,6 +141,7 @@ export const savingsAccountTransactions = pgTable(
     }).notNull(),
     transactionDate: date("transaction_date").notNull(),
     remarks: varchar("remarks", { length: 512 }).notNull(),
+    bank: varchar("bank", { length: 64 }).notNull(),
     accountNumber: varchar("account_number", { length: 32 }).notNull(),
     referenceNumber: varchar("reference_number", { length: 64 }),
     type: varchar("type", {
@@ -152,9 +153,7 @@ export const savingsAccountTransactions = pgTable(
     transactionKey: varchar("transaction_key", { length: 64 }).notNull(),
   },
   (table) => [
-    uniqueIndex("uq_savings_account_transaction_key").on(
-      table.transactionKey,
-    ),
+    uniqueIndex("uq_savings_account_transaction_key").on(table.transactionKey),
   ],
 );
 
@@ -178,3 +177,23 @@ export const savingsAccountInfo = pgTable("savings_account_info", {
     scale: 2,
   }).notNull(),
 });
+
+export const savingsInfo = pgTable("savings_info", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  budget: numeric("budget", { precision: 12, scale: 2 }).notNull(),
+});
+
+export const SavingsAccountTransactionInsertSchema = createInsertSchema(
+  savingsAccountTransactions,
+);
+export const SavingsAccountTransactionSelectSchema = createSelectSchema(
+  savingsAccountTransactions,
+);
+
+export const SavingsInfoInsertSchema = createInsertSchema(savingsInfo);
+export const SavingsInfoSelectSchema = createSelectSchema(savingsInfo);
+
+export const SavingsAccountInfoInsertSchema =
+  createInsertSchema(savingsAccountInfo);
+export const SavingsAccountInfoSelectSchema =
+  createSelectSchema(savingsAccountInfo);

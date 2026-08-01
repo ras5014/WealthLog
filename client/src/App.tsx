@@ -3,6 +3,7 @@ import { RouterProvider } from "react-router/dom";
 import MainLayout from "./layouts/MainLayout";
 import CreditCardPage from "./features/credit_card";
 import EmisPage from "./features/emis";
+import SavingsAccountPage from "./features/savings_account";
 import { Toaster } from 'react-hot-toast'
 
 function PagePlaceholder({ title }: { title: string }) {
@@ -25,7 +26,7 @@ const router = createBrowserRouter([
             },
             {
                 path: "savings-account",
-                Component: () => <PagePlaceholder title="Savings Account" />,
+                Component: SavingsAccountPage,
             },
             {
                 path: "credit-card",

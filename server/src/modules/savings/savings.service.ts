@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { desc, gte, eq } from "drizzle-orm";
 import db from "../../db/connection.ts";
 import {
   savingsAccountInfo,
@@ -23,6 +24,8 @@ const nearlyEqual = (a: number, b: number) => Math.abs(a - b) < 0.01;
 
 const normalizeWhitespace = (value: string) =>
   value.replaceAll(/\s+/g, " ").trim();
+
+const toDateKey = (date: Date) => date.toISOString().slice(0, 10);
 
 const buildTransactionKey = (
   accountNumber: string,
@@ -263,6 +266,7 @@ export const extractinfoFromICICI_savingsStatement = async (
       serialNumber: transaction.serialNumber.toString(),
       transactionDate: transaction.transactionDateIso,
       remarks: transaction.transactionRemarks,
+      bank: "ICICI",
       accountNumber: statementInfo.accountNumber,
       referenceNumber: transaction.referenceNumber,
       type: transaction.transactionType,
@@ -302,4 +306,29 @@ export const extractinfoFromICICI_savingsStatement = async (
     insertedTransactionCount,
     duplicateTransactionCount: transactions.length - insertedTransactionCount,
   };
+};
+
+export const getAllLatestSavingsTransactions = async () => {
+  const today = new Date();
+  const currentMonthStart = new Date(
+    Date.UTC(today.getFullYear(), today.getMonth(), 1),
+  );
+
+  const result = await db
+    .select()
+    .from(savingsAccountTransactions)
+    .where(
+      gte(
+        savingsAccountTransactions.transactionDate,
+        toDateKey(currentMonthStart),
+      ),
+    )
+    .orderBy(desc(savingsAccountTransactions.transactionDate));
+
+  return result;
+};
+
+export const getSavingsAccountInfo = async () => {
+  const result = await db.select().from(savingsAccountInfo);
+  return result.length > 0 ? result[0] : null;
 };
